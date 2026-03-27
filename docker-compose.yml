@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: plant_api
+    ports:
+      - "4000:5000"
+    env_file:
+      - .env
+    # depends_on:
+    #   - mongo
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm run dev  # for dev; change to `node dist/server.js` for prod
+
+#   mongo:
+#     image: mongo:6
+#     container_name: plant_mongo
+#     restart: always
+#     ports:
+#       - "27017:27017"
+#     volumes:
+#       - mongo-data:/data/db
+
+# volumes:
+#   mongo-data:
