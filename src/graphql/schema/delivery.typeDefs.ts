@@ -3,7 +3,7 @@ import { gql } from 'graphql-tag';
 export const deliveryTypeDefs = gql`
   type Delivery {
     id: ID!
-    saleId: Int!
+    saleId: ID!
     deliveryService: String!
     trackingNumber: String
     status: String!
@@ -12,7 +12,7 @@ export const deliveryTypeDefs = gql`
   }
 
   input CreateDeliveryInput {
-    saleId: Int!
+    saleId: ID!
     deliveryService: String!
     trackingNumber: String
     status: String
@@ -30,12 +30,14 @@ export const deliveryTypeDefs = gql`
   type DeliveryResponse {
     status: Boolean!
     message: String!
+    tap: String
     delivery: Delivery
   }
 
   type DeliveriesResponse {
     status: Boolean!
     message: String!
+    tap: String
     deliveries: [Delivery]
   }
 

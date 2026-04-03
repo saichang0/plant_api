@@ -23,12 +23,14 @@ export const categoryTypeDefs = gql`
   type CategoryResponse {
     status: Boolean!
     message: String!
+    tap: String
     category: Category
   }
 
   type CategoriesResponse {
     status: Boolean!
     message: String!
+    tap: String
     categories: [Category]
   }
 

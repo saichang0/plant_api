@@ -3,8 +3,8 @@ import { gql } from 'graphql-tag';
 export const stockReceptionDetailTypeDefs = gql`
   type StockReceptionDetail {
     id: ID!
-    receptionId: Int!
-    productId: Int!
+    receptionId: ID!
+    productId: ID!
     quantityReceived: Int!
     actualCostPrice: Float!
     status: String!
@@ -13,8 +13,8 @@ export const stockReceptionDetailTypeDefs = gql`
   }
 
   input CreateStockReceptionDetailInput {
-    receptionId: Int!
-    productId: Int!
+    receptionId: ID!
+    productId: ID!
     quantityReceived: Int!
     actualCostPrice: Float!
     status: String
@@ -32,12 +32,14 @@ export const stockReceptionDetailTypeDefs = gql`
   type StockReceptionDetailResponse {
     status: Boolean!
     message: String!
+    tap: String
     stockReceptionDetail: StockReceptionDetail
   }
 
   type StockReceptionDetailsResponse {
     status: Boolean!
     message: String!
+    tap: String
     stockReceptionDetails: [StockReceptionDetail]
   }
 

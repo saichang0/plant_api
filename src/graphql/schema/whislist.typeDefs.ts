@@ -18,14 +18,14 @@ export const wishlistTypeDefs = gql`
   type ToggleWishlistResponse {
     status: Boolean!
     message: String!
-    tag: String!
+    tap: String
     data: iswhislist
   }
 
   type WishlistsResponse {
     status: Boolean!
     message: String!
-    tag: String!
+    tap: String
     total: String!
     data: [Wishlist]!
   }

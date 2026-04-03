@@ -1,15 +1,18 @@
 import { AppDataSource } from "../../config/db.js";
 import { Payments } from "../models/payment.entity.js";
+import { requireAuth } from "../../requireAuth.js";
 
 const paymentRepository = AppDataSource.getRepository(Payments);
 
 export const paymentResolver = {
   Query: {
-    getPayment: async (_: any, args: { id: string }): Promise<any> => {
+    getPayment: async (_: any, args: { id: string }, context: any): Promise<any> => {
       try {
-        const paymentId = (args.id);
+        requireAuth(context);
+
+        const paymentId = args.id;
         if (!paymentId || paymentId.trim() === '') {
-          return { status: false, message: "Invalid payment ID" };
+          return { status: false, message: "Invalid payment ID", tap: "INVALID_INPUT" };
         }
 
         const payment = await paymentRepository.findOne({
@@ -18,12 +21,13 @@ export const paymentResolver = {
         });
 
         if (!payment) {
-          return { status: false, message: "Payment not found" };
+          return { status: false, message: "Payment not found", tap: "NOT_FOUND" };
         }
 
         return {
           status: true,
           message: "Payment found successfully",
+          tap: "FOUND",
           payment: payment,
         };
       } catch (error: any) {
@@ -31,12 +35,15 @@ export const paymentResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    getPayments: async (): Promise<any> => {
+    getPayments: async (_: any, __: any, context: any): Promise<any> => {
       try {
+        requireAuth(context);
+
         const payments = await paymentRepository.find({
           relations: ['sale']
         });
@@ -44,6 +51,7 @@ export const paymentResolver = {
         return {
           status: true,
           message: "Payments retrieved successfully",
+          tap: "FETCHED",
           payments: payments,
         };
       } catch (error: any) {
@@ -51,14 +59,17 @@ export const paymentResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
   },
 
   Mutation: {
-    createPayment: async (_: any, args: { input: any }): Promise<any> => {
+    createPayment: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
+        requireAuth(context);
+
         const { saleId, paymentMethod, currency = 'KIP', amount, slipImageUrl } = args.input;
 
         const newPayment = paymentRepository.create({
@@ -74,6 +85,7 @@ export const paymentResolver = {
         return {
           status: true,
           message: "Payment created successfully",
+          tap: "CREATED",
           payment: savedPayment,
         };
       } catch (error: any) {
@@ -81,23 +93,25 @@ export const paymentResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    updatePayment: async (_: any, args: { input: any }): Promise<any> => {
+    updatePayment: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const { id, data } = args.input;
-        const paymentId = (id);
+        requireAuth(context);
 
-        if (!paymentId || paymentId.trim() === '') {
-          return { status: false, message: "Invalid payment ID" };
+        const { id, data } = args.input;
+
+        if (!id || id.trim() === '') {
+          return { status: false, message: "Invalid payment ID", tap: "INVALID_INPUT" };
         }
 
-        const payment = await paymentRepository.findOneBy({ id: paymentId });
+        const payment = await paymentRepository.findOneBy({ id });
 
         if (!payment) {
-          return { status: false, message: "Payment not found" };
+          return { status: false, message: "Payment not found", tap: "NOT_FOUND" };
         }
 
         Object.assign(payment, data);
@@ -106,6 +120,7 @@ export const paymentResolver = {
         return {
           status: true,
           message: "Payment updated successfully",
+          tap: "UPDATED",
           payment: updatedPayment,
         };
       } catch (error: any) {
@@ -113,22 +128,25 @@ export const paymentResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    deletePayment: async (_: any, args: { input: any }): Promise<any> => {
+    deletePayment: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const paymentId = (args.input.id);
+        requireAuth(context);
+
+        const paymentId = args.input.id;
 
         if (!paymentId || paymentId.trim() === '') {
-          return { status: false, message: "Invalid payment ID" };
+          return { status: false, message: "Invalid payment ID", tap: "INVALID_INPUT" };
         }
 
         const payment = await paymentRepository.findOneBy({ id: paymentId });
 
         if (!payment) {
-          return { status: false, message: "Payment not found" };
+          return { status: false, message: "Payment not found", tap: "NOT_FOUND" };
         }
 
         await paymentRepository.remove(payment);
@@ -136,12 +154,14 @@ export const paymentResolver = {
         return {
           status: true,
           message: "Payment deleted successfully",
+          tap: "DELETED",
         };
       } catch (error: any) {
         console.error("Delete payment error:", error);
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },

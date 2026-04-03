@@ -1,15 +1,18 @@
 import { AppDataSource } from "../../config/db.js";
 import { PurchaseOrderDetails } from "../models/purchaseOrderDetail.entity.js";
+import { requireAuth } from "../../requireAuth.js";
 
 const purchaseOrderDetailRepository = AppDataSource.getRepository(PurchaseOrderDetails);
 
 export const purchaseOrderDetailResolver = {
   Query: {
-    getPurchaseOrderDetail: async (_: any, args: { id: string }): Promise<any> => {
+    getPurchaseOrderDetail: async (_: any, args: { id: string }, context: any): Promise<any> => {
       try {
-        const detailId = (args.id);
+        requireAuth(context);
+
+        const detailId = args.id;
         if (!detailId || detailId.trim() === '') {
-          return { status: false, message: "Invalid purchase order detail ID" };
+          return { status: false, message: "Invalid purchase order detail ID", tap: "INVALID_INPUT" };
         }
 
         const purchaseOrderDetail = await purchaseOrderDetailRepository.findOne({
@@ -18,12 +21,13 @@ export const purchaseOrderDetailResolver = {
         });
 
         if (!purchaseOrderDetail) {
-          return { status: false, message: "Purchase order detail not found" };
+          return { status: false, message: "Purchase order detail not found", tap: "NOT_FOUND" };
         }
 
         return {
           status: true,
           message: "Purchase order detail found successfully",
+          tap: "FOUND",
           purchaseOrderDetail: purchaseOrderDetail,
         };
       } catch (error: any) {
@@ -31,12 +35,15 @@ export const purchaseOrderDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    getPurchaseOrderDetails: async (): Promise<any> => {
+    getPurchaseOrderDetails: async (_: any, __: any, context: any): Promise<any> => {
       try {
+        requireAuth(context);
+
         const purchaseOrderDetails = await purchaseOrderDetailRepository.find({
           relations: ['order', 'product']
         });
@@ -44,6 +51,7 @@ export const purchaseOrderDetailResolver = {
         return {
           status: true,
           message: "Purchase order details retrieved successfully",
+          tap: "FETCHED",
           purchaseOrderDetails: purchaseOrderDetails,
         };
       } catch (error: any) {
@@ -51,14 +59,17 @@ export const purchaseOrderDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
   },
 
   Mutation: {
-    createPurchaseOrderDetail: async (_: any, args: { input: any }): Promise<any> => {
+    createPurchaseOrderDetail: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
+        requireAuth(context);
+
         const { orderId, productId, quantity } = args.input;
 
         const newPurchaseOrderDetail = purchaseOrderDetailRepository.create({
@@ -72,6 +83,7 @@ export const purchaseOrderDetailResolver = {
         return {
           status: true,
           message: "Purchase order detail created successfully",
+          tap: "CREATED",
           purchaseOrderDetail: savedPurchaseOrderDetail,
         };
       } catch (error: any) {
@@ -79,23 +91,25 @@ export const purchaseOrderDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    updatePurchaseOrderDetail: async (_: any, args: { input: any }): Promise<any> => {
+    updatePurchaseOrderDetail: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const { id, data } = args.input;
-        const detailId = (id);
+        requireAuth(context);
 
-        if (!detailId || detailId.trim() === '') {
-          return { status: false, message: "Invalid purchase order detail ID" };
+        const { id, data } = args.input;
+
+        if (!id || id.trim() === '') {
+          return { status: false, message: "Invalid purchase order detail ID", tap: "INVALID_INPUT" };
         }
 
-        const purchaseOrderDetail = await purchaseOrderDetailRepository.findOneBy({ id: detailId });
+        const purchaseOrderDetail = await purchaseOrderDetailRepository.findOneBy({ id });
 
         if (!purchaseOrderDetail) {
-          return { status: false, message: "Purchase order detail not found" };
+          return { status: false, message: "Purchase order detail not found", tap: "NOT_FOUND" };
         }
 
         Object.assign(purchaseOrderDetail, data);
@@ -104,6 +118,7 @@ export const purchaseOrderDetailResolver = {
         return {
           status: true,
           message: "Purchase order detail updated successfully",
+          tap: "UPDATED",
           purchaseOrderDetail: updatedPurchaseOrderDetail,
         };
       } catch (error: any) {
@@ -111,22 +126,25 @@ export const purchaseOrderDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    deletePurchaseOrderDetail: async (_: any, args: { input: any }): Promise<any> => {
+    deletePurchaseOrderDetail: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const detailId = (args.input.id);
+        requireAuth(context);
+
+        const detailId = args.input.id;
 
         if (!detailId || detailId.trim() === '') {
-          return { status: false, message: "Invalid purchase order detail ID" };
+          return { status: false, message: "Invalid purchase order detail ID", tap: "INVALID_INPUT" };
         }
 
         const purchaseOrderDetail = await purchaseOrderDetailRepository.findOneBy({ id: detailId });
 
         if (!purchaseOrderDetail) {
-          return { status: false, message: "Purchase order detail not found" };
+          return { status: false, message: "Purchase order detail not found", tap: "NOT_FOUND" };
         }
 
         await purchaseOrderDetailRepository.remove(purchaseOrderDetail);
@@ -134,12 +152,14 @@ export const purchaseOrderDetailResolver = {
         return {
           status: true,
           message: "Purchase order detail deleted successfully",
+          tap: "DELETED",
         };
       } catch (error: any) {
         console.error("Delete purchase order detail error:", error);
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },

@@ -29,12 +29,14 @@ export const SupplierTypeDefs = gql`
   type SupplierResponse {
     status: Boolean!
     message: String!
+    tap: String
     supplier: Supplier
   }
 
   type SuppliersResponse {
     status: Boolean!
     message: String!
+    tap: String
     suppliers: [Supplier]
   }
 

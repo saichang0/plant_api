@@ -3,7 +3,7 @@ import { gql } from 'graphql-tag';
 export const paymentTypeDefs = gql`
   type Payment {
     id: ID!
-    saleId: Int!
+    saleId: ID!
     paymentMethod: String!
     currency: String!
     amount: Float!
@@ -13,7 +13,7 @@ export const paymentTypeDefs = gql`
   }
 
   input CreatePaymentInput {
-    saleId: Int!
+    saleId: ID!
     paymentMethod: String!
     currency: String
     amount: Float!
@@ -32,12 +32,14 @@ export const paymentTypeDefs = gql`
   type PaymentResponse {
     status: Boolean!
     message: String!
+    tap: String
     payment: Payment
   }
 
   type PaymentsResponse {
     status: Boolean!
     message: String!
+    tap: String
     payments: [Payment]
   }
 

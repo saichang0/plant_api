@@ -1,25 +1,28 @@
 import nodemailer from 'nodemailer';
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
 });
 
-export const sendOTPEmail = async (email: string, otp: string) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: 'Your OTP Code',
-    html: `
-      <h2>Password Reset OTP</h2>
-      <p>Your OTP code is: <strong>${otp}</strong></p>
-      <p>This code will expire in 30 minutes.</p>
-      <p>If you didn't request this, please ignore this email.</p>
-    `,
-  };
-
-  await transporter.sendMail(mailOptions);
+export const sendOTPEmail = async (to: string, otp: string): Promise<void> => {
+    await transporter.sendMail({
+        from: `"Plant Shop" <${process.env.EMAIL_USER}>`,
+        to,
+        subject: "Your OTP Code",
+        html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2>OTP Verification</h2>
+                <p>Your OTP code is:</p>
+                <h1 style="letter-spacing: 8px; color: #2e7d32;">${otp}</h1>
+                <p>This code expires in <strong>1 hour</strong>.</p>
+                <p>If you did not request this, please ignore this email.</p>
+            </div>
+        `,
+    });
 };

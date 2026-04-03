@@ -3,8 +3,8 @@ import { gql } from 'graphql-tag';
 export const saleDetailTypeDefs = gql`
   type SaleDetail {
     id: ID!
-    saleId: Int!
-    productId: Int!
+    saleId: ID!
+    productId: ID!
     quantity: Int!
     unitPrice: Float!
     totalPrice: Float!
@@ -13,8 +13,8 @@ export const saleDetailTypeDefs = gql`
   }
 
   input CreateSaleDetailInput {
-    saleId: Int!
-    productId: Int!
+    saleId: ID!
+    productId: ID!
     quantity: Int!
     unitPrice: Float!
     totalPrice: Float!
@@ -32,12 +32,14 @@ export const saleDetailTypeDefs = gql`
   type SaleDetailResponse {
     status: Boolean!
     message: String!
+    tap: String
     saleDetail: SaleDetail
   }
 
   type SaleDetailsResponse {
     status: Boolean!
     message: String!
+    tap: String
     saleDetails: [SaleDetail]
   }
 

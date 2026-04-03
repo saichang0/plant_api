@@ -3,8 +3,8 @@ import { gql } from 'graphql-tag';
 export const purchaseOrderTypeDefs = gql`
   type PurchaseOrder {
     id: ID!
-    supplierId: Int!
-    userId: Int!
+    supplierId: ID!
+    userId: ID!
     orderDate: String!
     totalPrice: Float!
     status: String!
@@ -15,8 +15,7 @@ export const purchaseOrderTypeDefs = gql`
   }
 
   input CreatePurchaseOrderInput {
-    supplierId: Int!
-    userId: Int!
+    supplierId: ID!
     totalPrice: Float!
     status: String
   }
@@ -33,12 +32,14 @@ export const purchaseOrderTypeDefs = gql`
   type PurchaseOrderResponse {
     status: Boolean!
     message: String!
+    tap: String
     purchaseOrder: PurchaseOrder
   }
 
   type PurchaseOrdersResponse {
     status: Boolean!
     message: String!
+    tap: String
     purchaseOrders: [PurchaseOrder]
   }
 

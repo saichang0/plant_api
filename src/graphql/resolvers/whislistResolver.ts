@@ -23,7 +23,7 @@ export const wishlistResolver = {
                     return {
                         status: false,
                         message: msg.NOT_FOUND,
-                        tag: "Customer Not Found",
+                        tap: "NOT_FOUND",
                         data: []
                     };
                 }
@@ -46,7 +46,7 @@ export const wishlistResolver = {
                         stockQuantity: w.product.stockQuantity,
                         isPopular: w.product.isPopular,
                         isSpecialOffer: w.product.isSpecialOffer,
-                        discountPercentage: w.product.discountPercentage,
+                        discount: w.product.discount,
                         isActive: w.product.isActive,
                     } : null
                 }));
@@ -54,8 +54,8 @@ export const wishlistResolver = {
                 return {
                     status: true,
                     message: msg.SUCCESS,
+                    tap: "FETCHED",
                     total: wishlists.length.toString(),
-                    tag: "Wishlists Fetched",
                     data: result
                 };
             } catch (error: any) {
@@ -63,7 +63,7 @@ export const wishlistResolver = {
                 return {
                     status: false,
                     message: error.message,
-                    tag: "Error",
+                    tap: "ERROR",
                     data: []
                 };
             }
@@ -83,7 +83,7 @@ export const wishlistResolver = {
                     return {
                         status: false,
                         message: msg.NOT_FOUND,
-                        tag: 'Customer Not Found',
+                        tap: "NOT_FOUND",
                         data: null,
                     };
                 }
@@ -93,7 +93,7 @@ export const wishlistResolver = {
                     return {
                         status: false,
                         message: "Invalid product ID",
-                        tag: 'Invalid product ID',
+                        tap: "INVALID_INPUT",
                         data: null,
                     };
                 }
@@ -103,7 +103,7 @@ export const wishlistResolver = {
                     return {
                         status: false,
                         message: msg.NOT_FOUND,
-                        tag: 'Product Not Found',
+                        tap: "NOT_FOUND",
                         data: null,
                     };
                 }
@@ -121,7 +121,7 @@ export const wishlistResolver = {
                     return {
                         status: true,
                         message: msg.WISHLIST_REMOVED,
-                        tag: 'Wishlist Removed',
+                        tap: "WISHLIST_REMOVED",
                         data: {
                             id: existingWishlist.id,
                             customerId: existingWishlist.customerId,
@@ -141,7 +141,7 @@ export const wishlistResolver = {
                 return {
                     status: true,
                     message: msg.WISHLIST_ADDED,
-                    tag: 'Wishlist Added',
+                    tap: "WISHLIST_ADDED",
                     data: {
                         id: saved.id,
                         customerId: saved.customerId,
@@ -154,7 +154,7 @@ export const wishlistResolver = {
                 return {
                     status: false,
                     message: error.message,
-                    tag: 'Error',
+                    tap: "ERROR",
                     data: null,
                 };
             }

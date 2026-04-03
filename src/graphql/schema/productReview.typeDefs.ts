@@ -3,9 +3,9 @@ import { gql } from "graphql-tag";
 export const ProductReviewsTypeDefs = gql`
    type ProductReview {
     id: ID!
-    productId: Int
-    customerId: Int
-    saleId: Int
+    productId: ID
+    customerId: ID
+    saleId: ID
     rating: Int
     comment: String
     isVerifiedPurchase: Boolean
@@ -13,8 +13,8 @@ export const ProductReviewsTypeDefs = gql`
   }
 
   input CreateProductReviewInput {
-    productId: Int!
-    saleId: Int!
+    productId: ID!
+    saleId: ID!
     rating: Int
     comment: String
   }
@@ -25,22 +25,23 @@ export const ProductReviewsTypeDefs = gql`
   }
 
   type ProductReviewResponse {
-    tap: String!
     status: Boolean!
     message: String!
+    tap: String
     data: ProductReview
   }
 
   type ProductReviewsResponse {
     status: Boolean!
     message: String!
+    tap: String
     data: [ProductReview]
     total: Int
   }
 
   type Query {
     productReview(id: ID!): ProductReviewResponse
-    productReviews(productId: Int!): ProductReviewsResponse
+    productReviews(productId: ID!): ProductReviewsResponse
   }
 
   type Mutation {

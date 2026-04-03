@@ -17,11 +17,17 @@ import { Categories } from "./category.entity.js";
 
 @Entity('products')
 export class Products {
-  @PrimaryGeneratedColumn('uuid'  )
+  @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'uuid' })
   categoryId: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  createdBy?: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  deletedBy?: string;
 
   @Column({ type: 'varchar', length: 255 })
   name: string;
@@ -32,8 +38,8 @@ export class Products {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  variety?: string;
+  // @Column({ type: 'varchar', length: 100, nullable: true })
+  // variety?: string;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   size?: string;
@@ -57,7 +63,7 @@ export class Products {
   isSpecialOffer: boolean;
 
   @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
-  discountPercentage?: number;
+  discount?: number;
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
@@ -70,9 +76,6 @@ export class Products {
 
   @DeleteDateColumn({ type: 'timestamp', nullable: true })
   deletedAt?: Date;
-
-  @Column({ type: 'simple-array', nullable: true })
-  imagePublicIds?: string[];
 
   @ManyToOne(() => Categories, (cat) => cat.products)
   category: Categories;
