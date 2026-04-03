@@ -3,11 +3,10 @@ import { gql } from "graphql-tag";
 export const productTypeDefs = gql`
     type Product {
         id: ID!
-        categoryId: Int
+        categoryId: ID
         name: String
         imageUrl: String
         description: String
-        variety: String
         size: String
         ageMonths: Int
         stockQuantity: Int
@@ -15,21 +14,23 @@ export const productTypeDefs = gql`
         salePrice: Float
         isPopular: Boolean
         isSpecialOffer: Boolean
-        discountPercentage: Float
+        discount: Float
         isActive: Boolean
+        createdBy: ID
+        deletedBy: ID
         createdAt: String
         updatedAt: String
         deletedAt: String
         productReviews: [ProductReview]
+        productViews: [ProductReview]
         isFavorite: Boolean
     }
 
     input ProductInput {
-        categoryId: Int
+        categoryId: ID
         name: String
         imageUrl: String
         description: String
-        variety: String
         size: String
         ageMonths: Int
         stockQuantity: Int
@@ -37,7 +38,7 @@ export const productTypeDefs = gql`
         salePrice: Float
         isPopular: Boolean
         isSpecialOffer: Boolean
-        discountPercentage: Float
+        discount: Float
         isActive: Boolean
     }
 
@@ -49,7 +50,7 @@ export const productTypeDefs = gql`
     type ProductResponse {
         status: Boolean!
         message: String!
-        tag: String!
+        tap: String
         data: Product
     }
 
@@ -60,9 +61,9 @@ export const productTypeDefs = gql`
     type ProductsResponse {
         status: Boolean!
         message: String!
+        tap: String
         data: [Product]
         total: Int
-        tag: String!
     }
 
     input ProductFilterInput {
@@ -85,8 +86,8 @@ export const productTypeDefs = gql`
     }
 
     type Mutation {
-        createProduct(input: ProductInput!, images: [String]): ProductResponse
-        updateProduct(id: ID!, input: ProductInput!, images: [String]): ProductResponse
+        createProduct(input: ProductInput!): ProductResponse
+        updateProduct(id: ID!, input: ProductInput!): ProductResponse
         deleteProduct(id: ID!): ProductResponse
     }
 `

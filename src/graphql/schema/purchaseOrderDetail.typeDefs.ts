@@ -3,16 +3,16 @@ import { gql } from 'graphql-tag';
 export const purchaseOrderDetailTypeDefs = gql`
   type PurchaseOrderDetail {
     id: ID!
-    orderId: Int!
-    productId: Int!
+    orderId: ID!
+    productId: ID!
     quantity: Int!
     order: PurchaseOrder
     product: Product
   }
 
   input CreatePurchaseOrderDetailInput {
-    orderId: Int!
-    productId: Int!
+    orderId: ID!
+    productId: ID!
     quantity: Int!
   }
 
@@ -28,12 +28,14 @@ export const purchaseOrderDetailTypeDefs = gql`
   type PurchaseOrderDetailResponse {
     status: Boolean!
     message: String!
+    tap: String
     purchaseOrderDetail: PurchaseOrderDetail
   }
 
   type PurchaseOrderDetailsResponse {
     status: Boolean!
     message: String!
+    tap: String
     purchaseOrderDetails: [PurchaseOrderDetail]
   }
 

@@ -4,6 +4,11 @@ import { Sale } from './sale.entity.js';
 import { PurchaseOrders } from './purchaseOrder.entity.js';
 import { StockReceptions } from './stockReception.entity.js';
 
+export enum UserStatus {
+    ACTIVE = 'ACTIVE',
+    INACTIVE = 'INACTIVE'
+}
+
 @Entity('users')
 export class Users {
     @PrimaryGeneratedColumn('uuid')
@@ -21,6 +26,9 @@ export class Users {
     @Column({ type: 'varchar', length: 20, unique: true })
     phoneNumber: string;
 
+    @Column({ type: 'varchar', length: 100, unique: true, nullable: true })
+    email?: string;
+
     @Column({ type: 'text', nullable: true })
     profileImageUrl?: string;
 
@@ -30,8 +38,8 @@ export class Users {
     @Column({ type: 'varchar', length: 20, default: 'staff' })
     role: string;
 
-    @Column({ type: 'varchar', length: 20, default: 'active' })
-    status: string;
+    @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
+    status: UserStatus;
 
     @Column({ type: 'varchar', length: 6, nullable: true })
     otp?: string;

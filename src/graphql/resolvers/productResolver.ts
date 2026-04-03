@@ -1,10 +1,9 @@
-import jwt from "jsonwebtoken";
 import { requireAuth } from "@/requireAuth.js";
 import { msg } from '../../constants/massages.js';
 import { AppDataSource } from '../../config/db.js';
 import { Products } from "../models/product.entity.js";
 import { Wishlists } from "../models/wishList.entity.js";
-import { deleteFromCloudinary, uploadToCloudinary } from "@/utils/uploadImage.js";
+import { uploadToCloudinary } from "@/utils/uploadImage.js";
 import { ProductReviews } from "../models/productReview.entity.js";
 import { Like, In } from 'typeorm';
 
@@ -64,33 +63,27 @@ export const productResolver = {
                         createdAt: 'DESC'
                     }
                 });
-                console.log('products',products)
-
 
                 // Get user's wishlist
                 const wishlists = await wishlistRepository.find({
                     where: {
-                        userId: authUserId.id,
+                        customerId: authUserId.id,
                     } as any,
                 });
-                console.log('wishlists',wishlists)
-
 
                 const wishlistProductIds = new Set(
                     wishlists.map((w: Wishlists) => w.productId)
                 );
-                console.log('wishlistProductIds',wishlistProductIds)
-                
 
                 const productIds = products.map(p => p.id);
 
-                const productViews = await productViewRepository.find({
-                    where: {
-                        productId: In(productIds),
-                    }
-                })
-                console.log('productViews',productViews)
-                
+                const productViews = productIds.length > 0
+                    ? await productViewRepository.find({
+                        where: {
+                            productId: In(productIds),
+                        }
+                    })
+                    : [];
 
                 const productViewMap = productViews.reduce((acc, view) => {
                     const key = view.productId;
@@ -102,9 +95,8 @@ export const productResolver = {
                     acc[key].push(view);
                     return acc;
                 }, {} as Record<string, any[]>);
-                console.log('productviews',productViewMap)
 
-                // Map products with favorite status 
+                // Map products with favorite status
                 const data = products.map(product => ({
                     ...product,
                     isFavorite: wishlistProductIds.has(product.id),
@@ -114,18 +106,19 @@ export const productResolver = {
                 return {
                     status: true,
                     message: msg.FOUND_PRODUCTS,
+                    tap: "FETCHED",
                     data,
                     total,
-                    tag: "PRODUCTS_FETCHED",
                 };
-            } catch (error) {
-                console.error(error);
+            } catch (error: any) {
+                console.error("Products query error:", error.message);
+                console.error("Stack:", error.stack);
                 return {
                     status: false,
-                    message: msg.FAILED,
+                    message: error.message || msg.FAILED,
+                    tap: "ERROR",
                     data: [],
                     total: 0,
-                    tag: "FETCH_PRODUCTS_ERROR",
                 };
             }
         },
@@ -134,7 +127,7 @@ export const productResolver = {
             try {
                 const authUserId = requireAuth(context);
                 if (!authUserId) {
-                    return { status: false, message: "Unauthorized", tag: "UNAUTHORIZED" };
+                    return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED" };
                 }
 
                 let product: any = null;
@@ -142,16 +135,16 @@ export const productResolver = {
                 if (where?.id) {
                     const productId = (where.id);
                     if (!productId || productId.trim() === '') {
-                        return { status: false, message: "Invalid product ID", tag: "INVALID_ID" };
+                        return { status: false, message: "Invalid product ID", tap: "INVALID_INPUT" };
                     }
                     product = await productRepository.findOneBy({ id: productId, isActive: true });
                 }
                 if (!product) {
-                    return { status: false, message: msg.NOT_FOUND || "Not found", tag: "NOT_FOUND" };
+                    return { status: false, message: msg.NOT_FOUND || "Not found", tap: "NOT_FOUND" };
                 }
                 const wishlists = await wishlistRepository.find({
                     where: {
-                        userId: authUserId.id,
+                        customerId: authUserId.id,
                     } as any,
                 });
 
@@ -162,18 +155,18 @@ export const productResolver = {
                 return {
                     status: true,
                     message: msg.SUCCESS || "Product found",
-                    tag: "PRODUCT_FOUND",
+                    tap: "FOUND",
                     data: {
                         ...product,
                         isFavorite: wishlistProductIds.has(product.id),
                     },
                 };
             } catch (error: any) {
-                console.error("❌ Error fetching product:", error);
+                console.error("Error fetching product:", error);
                 return {
                     status: false,
                     message: error.message || "Failed to fetch product",
-                    tag: "FETCH_PRODUCT_ERROR",
+                    tap: "ERROR",
                 };
             }
         }
@@ -184,48 +177,43 @@ export const productResolver = {
             try {
                 const authUserId = requireAuth(context);
                 if (!authUserId) {
-                    return { status: false, message: "Unauthorized", tag: "Unauthorized" };
+                    return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED" };
                 }
 
                 let imageUrls: string[] = [];
-                let imagePublicIds: string[] = [];
 
                 if (images && images.length > 0) {
                     const uploadPromises = images.map(async (image: string) => {
                         const base64Data = image.split(',')[1];
                         const buffer = Buffer.from(base64Data, 'base64');
-
                         const result = await uploadToCloudinary({ buffer }, 'products');
-                        return result;
+                        return result.url;
                     });
-
-                    const uploadResults = await Promise.all(uploadPromises);
-                    imageUrls = uploadResults.map(result => result.url);
-                    imagePublicIds = uploadResults.map(result => result.publicId);
+                    imageUrls = await Promise.all(uploadPromises);
                 }
 
                 const product = productRepository.create({
                     ...input,
-                    imageUrl: imageUrls[0] || null,
-                    imagePublicIds: imagePublicIds,
-                    createdBy: authUserId,
+                    imageUrl: imageUrls[0] || input.imageUrl || null,
                     isActive: true,
+                    createdBy: authUserId.id,
                 });
 
-                await productRepository.save(product);
+                const savedResult = await productRepository.save(product);
+                const savedProduct = Array.isArray(savedResult) ? savedResult[0] : savedResult;
 
                 return {
                     status: true,
-                    message: "Product created successfully",
-                    tag: "PRODUCT_CREATED",
-                    data: product,
+                    message: msg.CREATE_PRODUCT_SUCCESS,
+                    tap: "CREATED",
+                    data: savedProduct,
                 };
             } catch (error: any) {
                 console.error("Error creating product:", error);
                 return {
                     status: false,
-                    message: error.message || "Failed to create product",
-                    tag: "CREATE_PRODUCT_ERROR",
+                    message: error.message || msg.ERROR_CREATING_PRODUCT,
+                    tap: "ERROR",
                 };
             }
         },
@@ -234,36 +222,21 @@ export const productResolver = {
             try {
                 const authUser = requireAuth(context);
                 if (!authUser?.id) {
-                    return { status: false, message: "Unauthorized", tag: "UNAUTHORIZED" };
+                    return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED" };
                 }
 
                 const productId = (id);
                 if (!productId || productId.trim() === '') {
-                    return { status: false, message: "Invalid product ID", tag: "INVALID_ID" };
+                    return { status: false, message: "Invalid product ID", tap: "INVALID_INPUT" };
                 }
 
                 const existingProduct = await productRepository.findOne({ where: { id: productId } });
                 if (!existingProduct) {
-                    return { status: false, message: msg.NOT_FOUND || "Product not found", tag: "NOT_FOUND" };
+                    return { status: false, message: msg.NOT_FOUND || "Product not found", tap: "NOT_FOUND" };
                 }
 
                 // Handle image uploads if new images are provided
                 if (images && images.length > 0) {
-                    // Delete old images from Cloudinary if they exist
-                    if (existingProduct.imagePublicIds && existingProduct.imagePublicIds.length > 0) {
-                        try {
-                            await Promise.all(
-                                existingProduct.imagePublicIds.map(publicId =>
-                                    deleteFromCloudinary(publicId)
-                                )
-                            );
-                        } catch (deleteError) {
-                            console.error("Error deleting old images:", deleteError);
-                            // Continue even if deletion fails
-                        }
-                    }
-
-                    // Upload new images to Cloudinary
                     try {
                         const uploadPromises = images.map(async (image: any) => {
                             const { createReadStream } = await image;
@@ -276,20 +249,20 @@ export const productResolver = {
                             }
                             const buffer = Buffer.concat(chunks);
 
-                            return await uploadToCloudinary({ buffer }, 'products');
+                            const result = await uploadToCloudinary({ buffer }, 'products');
+                            return result.url;
                         });
 
-                        const uploadResults = await Promise.all(uploadPromises);
+                        const imageUrls = await Promise.all(uploadPromises);
 
-                        // Add image URL and public IDs to input
-                        input.imageUrl = uploadResults[0]?.url || null;
-                        input.imagePublicIds = uploadResults.map(r => r.publicId);
+                        // Add image URL to input (only the first image is used)
+                        input.imageUrl = imageUrls[0] || null;
                     } catch (uploadError) {
                         console.error("Error uploading images:", uploadError);
                         return {
                             status: false,
                             message: "Failed to upload images",
-                            tag: "IMAGE_UPLOAD_ERROR",
+                            tap: "ERROR",
                         };
                     }
                 }
@@ -302,7 +275,7 @@ export const productResolver = {
                 return {
                     status: true,
                     message: msg.SUCCESS || "Product updated successfully",
-                    tag: "PRODUCT_UPDATED",
+                    tap: "UPDATED",
                     data: updatedProduct,
                 };
             } catch (error: any) {
@@ -310,31 +283,20 @@ export const productResolver = {
                 return {
                     status: false,
                     message: error.message || "Failed to update product",
-                    tag: "UPDATE_PRODUCT_ERROR",
+                    tap: "ERROR",
                 };
             }
         },
         deleteProduct: async (_: any, { id }: any, context: any): Promise<any> => {
             try {
-                if (!context?.req?.headers?.authorization) {
-                    return { status: false, message: msg.NO_TOKEN, tag: "Unauthorized" };
+                const authUser = requireAuth(context);
+                if (!authUser?.id) {
+                    return { status: false, message: msg.UNAUTHORIZED, tap: "UNAUTHORIZED" };
                 }
-
-                let token = context.req.headers.authorization;
-
-                if (token.startsWith('Authorization: ')) {
-                    token = token.split(' ')[1];
-                }
-
-                if (!token) {
-                    return { status: false, message: msg.NO_TOKEN, tag: "Unauthorized" };
-                }
-
-                const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
 
                 const productId = (id);
                 if (!productId || productId.trim() === '') {
-                    return { status: false, message: "Invalid product ID", tag: "INVALID_ID" };
+                    return { status: false, message: "Invalid product ID", tap: "INVALID_INPUT" };
                 }
 
                 const existingProduct = await productRepository.findOne({
@@ -342,30 +304,16 @@ export const productResolver = {
                 });
 
                 if (!existingProduct) {
-                    return { status: false, message: msg.NOT_FOUND, tag: "Not Found" };
+                    return { status: false, message: msg.NOT_FOUND, tap: "NOT_FOUND" };
                 }
-
-                // Delete images from Cloudinary before deleting product
-                if (existingProduct.imagePublicIds && existingProduct.imagePublicIds.length > 0) {
-                    try {
-                        await Promise.all(
-                            existingProduct.imagePublicIds.map(publicId =>
-                                deleteFromCloudinary(publicId)
-                            )
-                        );
-                    } catch (deleteError) {
-                        console.error("Error deleting images from Cloudinary:", deleteError);
-                        // Continue with product deletion even if image deletion fails
-                    }
-                }
-
-                // Delete the product from database
-                await productRepository.delete({ id: productId });
+                // Soft delete: set deletedBy and use softDelete
+                await productRepository.update(productId, { deletedBy: authUser.id });
+                await productRepository.softDelete(productId);
 
                 return {
                     status: true,
                     message: msg.SUCCESS || "Product deleted successfully",
-                    tag: "PRODUCT_DELETED",
+                    tap: "DELETED",
                     data: null
                 };
             } catch (error: any) {
@@ -373,7 +321,7 @@ export const productResolver = {
                 return {
                     status: false,
                     message: error.message || "Failed to delete product",
-                    tag: "DELETE_PRODUCT_ERROR"
+                    tap: "ERROR",
                 };
             }
         }

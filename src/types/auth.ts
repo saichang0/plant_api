@@ -1,7 +1,7 @@
 export type AuthResponse = {
   status: boolean;
   message: string;
-  tag: string;
+  tap?: string;
   user?: any;
   customer?: any;
   accessToken?: string;
@@ -11,6 +11,6 @@ export type AuthResponse = {
 export type Response = {
   status: boolean;
   message: string;
-  tag: string;
+  tap?: string;
 };
 

@@ -18,7 +18,7 @@ export const CustomerTypeDefs = gql`
   type AuthResponse {
     status: Boolean!
     message: String!
-    tag: String!
+    tap: String
     customer: Customer
     accessToken: String
     refreshToken: String
@@ -65,10 +65,17 @@ input CustomerLoginInput {
   password: String!
 }
 
+input ResetPasswordInput {
+  email: String!
+  otp: String!
+  password: String!
+  confirmPassword: String!
+}
+
 type Response {
   status: Boolean!
   message: String!
-  tag: String!
+  tap: String
 }
 
 type Query {
@@ -82,7 +89,7 @@ type Mutation {
   loginCustomer(data: CustomerLoginInput!): AuthResponse!
   requestOTP(data: RequestOTPInput!): Response!  
   verifyOTP(data: VerifyOTPInput!): Response!
-  resetPassword(data: CustomerLoginInput!): AuthResponse!
+  resetPassword(data: ResetPasswordInput!): AuthResponse!
 }
 
 `;

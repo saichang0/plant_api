@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from "jsonwebtoken";
-import nodemailer from 'nodemailer';
 import { msg } from "../../constants/massages.js";
+import { sendOTPEmail } from "@/utils/emailService.js";
 import { AppDataSource } from "../../config/db.js";
 import { Customers } from "../models/customer.entity.js";
 import { AuthResponse, Response } from '../../types/auth.js';
@@ -32,13 +32,13 @@ export const customerResolver = {
           return {
             status: false,
             message: "Unauthorized",
-            tag: "Unauthorized",
+            tap: "UNAUTHORIZED",
           };
         }
 
         const customerId = (args.id);
         if (!customerId || customerId.trim() === '') {
-          return { status: false, message: "Invalid customer ID", tag: "INVALID_ID" };
+          return { status: false, message: "Invalid customer ID", tap: "INVALID_INPUT" };
         }
 
         const customer = await customerRepository.findOneBy({
@@ -46,13 +46,13 @@ export const customerResolver = {
         });
 
         if (!customer) {
-          return { status: false, message: "Customer not found", tag: "Not Found" };
+          return { status: false, message: "Customer not found", tap: "NOT_FOUND" };
         }
 
         return {
           status: true,
           message: "Customer found successfully",
-          tag: "Success",
+          tap: "FOUND",
           customer: customer,
         };
       } catch (error: any) {
@@ -60,7 +60,7 @@ export const customerResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
-          tag: "Error",
+          tap: "ERROR",
         };
       }
     },
@@ -75,7 +75,7 @@ export const customerResolver = {
             { phoneNumber: data.phoneNumber }
           ]
         });
-        if (existingCustomer) return { status: false, message: msg.ALREADY_EXISTS, tag: "Customer Already Exists" };
+        if (existingCustomer) return { status: false, message: msg.ALREADY_EXISTS, tap: "ALREADY_EXISTS" };
 
         const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -97,7 +97,7 @@ export const customerResolver = {
         return {
           status: true,
           message: msg.SUCCESS,
-          tag: "Customer Created",
+          tap: "CREATED",
           customer: customerWithoutPassword,
           ...tokens
         };
@@ -106,7 +106,7 @@ export const customerResolver = {
         if (error.errors) {
           console.error('Validation errors:', error.errors);
         }
-        return { status: false, message: error.message, tag: "Failed to create customer" };
+        return { status: false, message: error.message, tap: "ERROR" };
       }
     },
 
@@ -115,7 +115,7 @@ export const customerResolver = {
         const { identifier, password } = args.data;
 
         if (!identifier || !password) {
-          return { status: false, message: "Identifier and password are required", tag: "Invalid Input" };
+          return { status: false, message: msg.INVALID_INPUT, tap: "INVALID_INPUT" };
         }
 
         const customer = await customerRepository.findOne({
@@ -126,12 +126,12 @@ export const customerResolver = {
         });
 
         if (!customer || !customer.password) {
-          return { status: false, message: "Customer not found", tag: "Not Found" };
+          return { status: false, message: msg.NOT_FOUND, tap: "NOT_FOUND" };
         }
 
         const isPasswordValid = await bcrypt.compare(password, customer.password);
         if (!isPasswordValid) {
-          return { status: false, message: "Invalid password", tag: "Invalid Credentials" };
+          return { status: false, message: msg.PASSWORD_MISMATCH, tap: "PASSWORD_MISMATCH" };
         }
 
         const { password: _, ...customerWithoutPassword } = customer as any;
@@ -139,14 +139,14 @@ export const customerResolver = {
 
         return {
           status: true,
-          message: "Login successful",
-          tag: "Success",
+          message: msg.LOGIN_SUCCESS,
+          tap: "LOGIN_SUCCESS",
           customer: customerWithoutPassword,
           ...tokens
         };
       } catch (error: any) {
         console.error('Login customer error:', error);
-        return { status: false, message: error.message || "An error occurred", tag: "Error" };
+        return { status: false, message: error.message || "An error occurred", tap: "ERROR" };
       }
     },
 
@@ -154,17 +154,17 @@ export const customerResolver = {
       try {
         const authHeader = requireAuth(context);
         if (!authHeader) {
-          return { status: false, message: "Unauthorized", tag: "Unauthorized", customer: null };
+          return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED", customer: null };
         }
 
         const customerId = (args.data.id);
         if (!customerId || customerId.trim() === '') {
-          return { status: false, message: "Invalid customer ID", tag: "INVALID_ID" };
+          return { status: false, message: msg.INVALID_INPUT, tap: "INVALID_INPUT" };
         }
 
         const customer = await customerRepository.findOneBy({ id: customerId });
         if (!customer)
-          return { status: false, message: "Customer not found", tag: "Not Found Customer", customer: null };
+          return { status: false, message: msg.NOT_FOUND, tap: "NOT_FOUND", customer: null };
 
         const updatedCustomer = await customerRepository.save({
           ...customer,
@@ -173,47 +173,43 @@ export const customerResolver = {
 
         return {
           status: true,
-          tag: "Customer Updated",
-          message: "Customer updated successfully",
+          message: msg.SUCCESS,
+          tap: "UPDATED",
           customer: updatedCustomer
         };
 
       } catch (error: any) {
         console.error('Update error:', error);
         if (error.name === 'JsonWebTokenError') {
-          return { status: false, message: "Invalid token", tag: "Unauthorized", customer: null };
+          return { status: false, message: "Invalid token", tap: "UNAUTHORIZED", customer: null };
         }
-        return { status: false, message: error.message || "Update failed", tag: "Update Failed", customer: null };
+        return { status: false, message: error.message || "Update failed", tap: "ERROR", customer: null };
       }
     },
 
     deleteCustomer: async (_: any, args: { data: { id: string } }, context: any): Promise<AuthResponse> => {
       try {
-        const authHeader = requireAuth(context);
-        if (!authHeader) {
-          return { status: false, message: "Unauthorized", tag: "Unauthorized", customer: null };
+        const authUserId = requireAuth(context);
+        if (!authUserId) {
+          return { status: false, message: msg.UNAUTHORIZED, tap: "UNAUTHORIZED" };
         }
 
-        const customerId = (args.data.id);
+        const customerId = args.data.id;
         if (!customerId || customerId.trim() === '') {
-          return { status: false, message: "Invalid customer ID", tag: "INVALID_ID" };
+          return { status: false, message: msg.INVALID_INPUT, tap: "INVALID_INPUT" };
         }
 
-        const customer = await customerRepository.findOne({ where: { id: customerId } });
+        const customer = await customerRepository.findOneBy({ id: customerId });
         if (!customer) {
-          return { status: false, message: msg.NOT_FOUND, tag: "Customer not found" };
+          return { status: false, message: msg.NOT_FOUND, tap: "NOT_FOUND" };
         }
+
         await customerRepository.remove(customer);
 
-        return {
-          status: true,
-          tag: "Customer Deleted",
-          message: msg.SUCCESS,
-          customer: null
-        };
+        return { status: true, message: msg.SUCCESS, tap: "DELETED" };
       } catch (error: any) {
-        console.error('Delete error:', error);
-        return { status: false, message: error.message, tag: "Delete Failed" };
+        console.error('Delete customer error:', error);
+        return { status: false, message: error.message || "Delete failed", tap: "ERROR" };
       }
     },
 
@@ -221,33 +217,21 @@ export const customerResolver = {
       try {
         const { email } = args.data;
         const customer = await customerRepository.findOne({ where: { email: email } });
-        if (!customer) return { status: false, message: msg.NOT_FOUND, tag: "Not Found Customer" };
+        if (!customer) return { status: false, message: msg.NOT_FOUND, tap: "NOT_FOUND" };
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const otpExpiry = new Date(Date.now() + 60 * 60 * 1000); 
+        const otpExpiry = new Date(Date.now() + 60 * 60 * 1000);
 
         customer.otp = otp;
         customer.otpExpiry = otpExpiry;
         await customerRepository.save(customer);
 
-        const transporter = nodemailer.createTransport({
-          host: "smtp.gmail.com",
-          port: 587,
-          secure: false,
-          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-        });
+        await sendOTPEmail(email, otp);
 
-        await transporter.sendMail({
-          from: `"Your App" <${process.env.EMAIL_USER}>`,
-          to: email,
-          subject: "Your OTP Code",
-          html: `<h3>${otp}</h3><p>Expires in 1 hour</p>`
-        });
-
-        return { status: true, message: msg.OTP_SENT, tag: "OTP Sent" };
+        return { status: true, message: msg.OTP_SENT, tap: "OTP_SENT" };
       } catch (error: any) {
         console.error('Request OTP error:', error);
-        return { status: false, message: error.message, tag: "Request OTP Failed" };
+        return { status: false, message: error.message, tap: "ERROR" };
       }
     },
 
@@ -257,17 +241,17 @@ export const customerResolver = {
         const customer = await customerRepository.findOne({ where: { email: email } });
 
         if (!customer) {
-          return { status: false, message: msg.USER_NOT_FOUND, tag: "Not Found Customer" };
+          return { status: false, message: msg.USER_NOT_FOUND, tap: "NOT_FOUND" };
         }
 
         // Check if OTP matches
         if (customer.otp !== otp) {
-          return { status: false, message: msg.OTP_INVALID, tag: "Invalid OTP" };
+          return { status: false, message: msg.OTP_INVALID, tap: "OTP_INVALID" };
         }
 
         // Check if OTP is expired (handle nullable case)
         if (!customer.otpExpiry || customer.otpExpiry < new Date()) {
-          return { status: false, message: msg.OTP_EXPIRED, tag: "OTP Expired" };
+          return { status: false, message: msg.OTP_EXPIRED, tap: "OTP_EXPIRED" };
         }
 
         // Clear OTP after successful verification
@@ -278,22 +262,64 @@ export const customerResolver = {
         return {
           status: true,
           message: msg.OTP_VERIFIED,
-          tag: "OTP Verified",
+          tap: "OTP_VERIFIED",
         };
       } catch (error: any) {
         console.error("Verify OTP error:", error);
-        return { status: false, message: error.message, tag: "Verify OTP Failed" };
+        return { status: false, message: error.message, tap: "ERROR" };
       }
     },
 
+    resetPassword: async (_: any, args: { data: { email: string; otp: string; password: string; confirmPassword: string } }): Promise<AuthResponse> => {
+      try {
+        const { email, otp, password, confirmPassword } = args.data;
 
-    resetPassword: async (_: any, args: { data: { email: string, password: string } }): Promise<Response> => {
-      return {
-        status: false,
-        message: "Password reset not available for customers",
-        tag: "Not Implemented"
-      };
+        if (!email || !otp || !password || !confirmPassword) {
+          return { status: false, message: msg.INVALID_INPUT, tap: "INVALID_INPUT" };
+        }
+
+        if (password !== confirmPassword) {
+          return { status: false, message: msg.PASSWORD_MISMATCH, tap: "PASSWORD_MISMATCH" };
+        }
+
+        if (password.length < 8) {
+          return { status: false, message: msg.PASSWORD_TOO_SHORT, tap: "PASSWORD_TOO_SHORT" };
+        }
+
+        const customer = await customerRepository.findOne({ where: { email } });
+
+        if (!customer) {
+          return { status: false, message: msg.USER_NOT_FOUND, tap: "NOT_FOUND" };
+        }
+
+        if (!customer.otp || customer.otp !== otp) {
+          return { status: false, message: msg.OTP_INVALID, tap: "OTP_INVALID" };
+        }
+
+        if (!customer.otpExpiry || customer.otpExpiry < new Date()) {
+          return { status: false, message: msg.OTP_EXPIRED, tap: "OTP_EXPIRED" };
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        customer.password = hashedPassword;
+        customer.otp = undefined;
+        customer.otpExpiry = undefined;
+
+        const updatedCustomer = await customerRepository.save(customer);
+        const { password: _, ...customerWithoutPassword } = updatedCustomer as any;
+        const tokens = generateCustomerToken(updatedCustomer);
+
+        return {
+          status: true,
+          message: msg.PASSWORD_UPDATE_SUCCESS,
+          tap: "PASSWORD_RESET",
+          customer: customerWithoutPassword,
+          ...tokens
+        };
+      } catch (error: any) {
+        console.error('Reset password error:', error);
+        return { status: false, message: error.message || "Password reset failed", tap: "ERROR" };
+      }
     },
   },
 };
-

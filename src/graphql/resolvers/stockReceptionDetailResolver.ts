@@ -1,15 +1,18 @@
 import { AppDataSource } from "../../config/db.js";
 import { StockReceptionDetails } from "../models/stockReceptionDetail.entity.js";
+import { requireAuth } from "../../requireAuth.js";
 
 const stockReceptionDetailRepository = AppDataSource.getRepository(StockReceptionDetails);
 
 export const stockReceptionDetailResolver = {
   Query: {
-    getStockReceptionDetail: async (_: any, args: { id: string }): Promise<any> => {
+    getStockReceptionDetail: async (_: any, args: { id: string }, context: any): Promise<any> => {
       try {
-        const detailId = (args.id);
+        requireAuth(context);
+
+        const detailId = args.id;
         if (!detailId || detailId.trim() === '') {
-          return { status: false, message: "Invalid stock reception detail ID" };
+          return { status: false, message: "Invalid stock reception detail ID", tap: "INVALID_INPUT" };
         }
 
         const stockReceptionDetail = await stockReceptionDetailRepository.findOne({
@@ -18,12 +21,13 @@ export const stockReceptionDetailResolver = {
         });
 
         if (!stockReceptionDetail) {
-          return { status: false, message: "Stock reception detail not found" };
+          return { status: false, message: "Stock reception detail not found", tap: "NOT_FOUND" };
         }
 
         return {
           status: true,
           message: "Stock reception detail found successfully",
+          tap: "FOUND",
           stockReceptionDetail: stockReceptionDetail,
         };
       } catch (error: any) {
@@ -31,12 +35,15 @@ export const stockReceptionDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    getStockReceptionDetails: async (): Promise<any> => {
+    getStockReceptionDetails: async (_: any, __: any, context: any): Promise<any> => {
       try {
+        requireAuth(context);
+
         const stockReceptionDetails = await stockReceptionDetailRepository.find({
           relations: ['reception', 'product']
         });
@@ -44,6 +51,7 @@ export const stockReceptionDetailResolver = {
         return {
           status: true,
           message: "Stock reception details retrieved successfully",
+          tap: "FETCHED",
           stockReceptionDetails: stockReceptionDetails,
         };
       } catch (error: any) {
@@ -51,14 +59,17 @@ export const stockReceptionDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
   },
 
   Mutation: {
-    createStockReceptionDetail: async (_: any, args: { input: any }): Promise<any> => {
+    createStockReceptionDetail: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
+        requireAuth(context);
+
         const { receptionId, productId, quantityReceived, actualCostPrice, status = 'received' } = args.input;
 
         const newStockReceptionDetail = stockReceptionDetailRepository.create({
@@ -74,6 +85,7 @@ export const stockReceptionDetailResolver = {
         return {
           status: true,
           message: "Stock reception detail created successfully",
+          tap: "CREATED",
           stockReceptionDetail: savedStockReceptionDetail,
         };
       } catch (error: any) {
@@ -81,23 +93,25 @@ export const stockReceptionDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    updateStockReceptionDetail: async (_: any, args: { input: any }): Promise<any> => {
+    updateStockReceptionDetail: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const { id, data } = args.input;
-        const detailId = (id);
+        requireAuth(context);
 
-        if (!detailId || detailId.trim() === '') {
-          return { status: false, message: "Invalid stock reception detail ID" };
+        const { id, data } = args.input;
+
+        if (!id || id.trim() === '') {
+          return { status: false, message: "Invalid stock reception detail ID", tap: "INVALID_INPUT" };
         }
 
-        const stockReceptionDetail = await stockReceptionDetailRepository.findOneBy({ id: detailId });
+        const stockReceptionDetail = await stockReceptionDetailRepository.findOneBy({ id });
 
         if (!stockReceptionDetail) {
-          return { status: false, message: "Stock reception detail not found" };
+          return { status: false, message: "Stock reception detail not found", tap: "NOT_FOUND" };
         }
 
         Object.assign(stockReceptionDetail, data);
@@ -106,6 +120,7 @@ export const stockReceptionDetailResolver = {
         return {
           status: true,
           message: "Stock reception detail updated successfully",
+          tap: "UPDATED",
           stockReceptionDetail: updatedStockReceptionDetail,
         };
       } catch (error: any) {
@@ -113,22 +128,25 @@ export const stockReceptionDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    deleteStockReceptionDetail: async (_: any, args: { input: any }): Promise<any> => {
+    deleteStockReceptionDetail: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const detailId = (args.input.id);
+        requireAuth(context);
+
+        const detailId = args.input.id;
 
         if (!detailId || detailId.trim() === '') {
-          return { status: false, message: "Invalid stock reception detail ID" };
+          return { status: false, message: "Invalid stock reception detail ID", tap: "INVALID_INPUT" };
         }
 
         const stockReceptionDetail = await stockReceptionDetailRepository.findOneBy({ id: detailId });
 
         if (!stockReceptionDetail) {
-          return { status: false, message: "Stock reception detail not found" };
+          return { status: false, message: "Stock reception detail not found", tap: "NOT_FOUND" };
         }
 
         await stockReceptionDetailRepository.remove(stockReceptionDetail);
@@ -136,12 +154,14 @@ export const stockReceptionDetailResolver = {
         return {
           status: true,
           message: "Stock reception detail deleted successfully",
+          tap: "DELETED",
         };
       } catch (error: any) {
         console.error("Delete stock reception detail error:", error);
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },

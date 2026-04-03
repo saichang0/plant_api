@@ -1,15 +1,18 @@
 import { AppDataSource } from "../../config/db.js";
 import { SaleDetails } from "../models/saleDetail.entity.js";
+import { requireAuth } from "../../requireAuth.js";
 
 const saleDetailRepository = AppDataSource.getRepository(SaleDetails);
 
 export const saleDetailResolver = {
   Query: {
-    getSaleDetail: async (_: any, args: { id: string }): Promise<any> => {
+    getSaleDetail: async (_: any, args: { id: string }, context: any): Promise<any> => {
       try {
-        const detailId = (args.id);
+        requireAuth(context);
+
+        const detailId = args.id;
         if (!detailId || detailId.trim() === '') {
-          return { status: false, message: "Invalid sale detail ID" };
+          return { status: false, message: "Invalid sale detail ID", tap: "INVALID_INPUT" };
         }
 
         const saleDetail = await saleDetailRepository.findOne({
@@ -18,12 +21,13 @@ export const saleDetailResolver = {
         });
 
         if (!saleDetail) {
-          return { status: false, message: "Sale detail not found" };
+          return { status: false, message: "Sale detail not found", tap: "NOT_FOUND" };
         }
 
         return {
           status: true,
           message: "Sale detail found successfully",
+          tap: "FOUND",
           saleDetail: saleDetail,
         };
       } catch (error: any) {
@@ -31,12 +35,15 @@ export const saleDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    getSaleDetails: async (): Promise<any> => {
+    getSaleDetails: async (_: any, __: any, context: any): Promise<any> => {
       try {
+        requireAuth(context);
+
         const saleDetails = await saleDetailRepository.find({
           relations: ['sale', 'product']
         });
@@ -44,6 +51,7 @@ export const saleDetailResolver = {
         return {
           status: true,
           message: "Sale details retrieved successfully",
+          tap: "FETCHED",
           saleDetails: saleDetails,
         };
       } catch (error: any) {
@@ -51,14 +59,17 @@ export const saleDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
   },
 
   Mutation: {
-    createSaleDetail: async (_: any, args: { input: any }): Promise<any> => {
+    createSaleDetail: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
+        requireAuth(context);
+
         const { saleId, productId, quantity, unitPrice, totalPrice } = args.input;
 
         const newSaleDetail = saleDetailRepository.create({
@@ -74,6 +85,7 @@ export const saleDetailResolver = {
         return {
           status: true,
           message: "Sale detail created successfully",
+          tap: "CREATED",
           saleDetail: savedSaleDetail,
         };
       } catch (error: any) {
@@ -81,23 +93,25 @@ export const saleDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    updateSaleDetail: async (_: any, args: { input: any }): Promise<any> => {
+    updateSaleDetail: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const { id, data } = args.input;
-        const detailId = (id);
+        requireAuth(context);
 
-        if (!detailId || detailId.trim() === '') {
-          return { status: false, message: "Invalid sale detail ID" };
+        const { id, data } = args.input;
+
+        if (!id || id.trim() === '') {
+          return { status: false, message: "Invalid sale detail ID", tap: "INVALID_INPUT" };
         }
 
-        const saleDetail = await saleDetailRepository.findOneBy({ id: detailId });
+        const saleDetail = await saleDetailRepository.findOneBy({ id });
 
         if (!saleDetail) {
-          return { status: false, message: "Sale detail not found" };
+          return { status: false, message: "Sale detail not found", tap: "NOT_FOUND" };
         }
 
         Object.assign(saleDetail, data);
@@ -106,6 +120,7 @@ export const saleDetailResolver = {
         return {
           status: true,
           message: "Sale detail updated successfully",
+          tap: "UPDATED",
           saleDetail: updatedSaleDetail,
         };
       } catch (error: any) {
@@ -113,22 +128,25 @@ export const saleDetailResolver = {
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },
 
-    deleteSaleDetail: async (_: any, args: { input: any }): Promise<any> => {
+    deleteSaleDetail: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const detailId = (args.input.id);
+        requireAuth(context);
+
+        const detailId = args.input.id;
 
         if (!detailId || detailId.trim() === '') {
-          return { status: false, message: "Invalid sale detail ID" };
+          return { status: false, message: "Invalid sale detail ID", tap: "INVALID_INPUT" };
         }
 
         const saleDetail = await saleDetailRepository.findOneBy({ id: detailId });
 
         if (!saleDetail) {
-          return { status: false, message: "Sale detail not found" };
+          return { status: false, message: "Sale detail not found", tap: "NOT_FOUND" };
         }
 
         await saleDetailRepository.remove(saleDetail);
@@ -136,12 +154,14 @@ export const saleDetailResolver = {
         return {
           status: true,
           message: "Sale detail deleted successfully",
+          tap: "DELETED",
         };
       } catch (error: any) {
         console.error("Delete sale detail error:", error);
         return {
           status: false,
           message: error.message || "An error occurred",
+          tap: "ERROR",
         };
       }
     },

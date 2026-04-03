@@ -15,7 +15,7 @@ export const ProductReviewResolver = {
             try {
                 const authUserId = requireAuth(context);
                 if (!authUserId) {
-                    return { status: false, message: "Unauthorized", tag: "UNAUTHORIZED" };
+                    return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED" };
                 }
 
                 const review = await productReviewsRepository.findOne({
@@ -23,20 +23,20 @@ export const ProductReviewResolver = {
                 });
 
                 if (!review) {
-                    return { status: false, message: "Review not found", tag: "NOT_FOUND" };
+                    return { status: false, message: "Review not found", tap: "NOT_FOUND" };
                 }
 
                 return {
                     status: true,
                     message: "Review found",
+                    tap: "FOUND",
                     data: review,
-                    tag: "REVIEW_FOUND"
                 };
             } catch (error: any) {
                 return {
                     status: false,
                     message: error.message,
-                    tag: "ERROR",
+                    tap: "ERROR",
                 };
             }
         },
@@ -45,7 +45,7 @@ export const ProductReviewResolver = {
             try {
                 const authUserId = requireAuth(context);
                 if (!authUserId) {
-                    return { status: false, message: "Unauthorized", tag: "UNAUTHORIZED" };
+                    return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED" };
                 }
 
                 const reviews = await productReviewsRepository.find({
@@ -55,15 +55,15 @@ export const ProductReviewResolver = {
                 return {
                     status: true,
                     message: "Reviews found",
+                    tap: "FETCHED",
                     data: reviews,
                     total: reviews.length,
-                    tag: "REVIEWS_FOUND"
                 };
             } catch (error: any) {
                 return {
                     status: false,
                     message: error.message,
-                    tag: "ERROR",
+                    tap: "ERROR",
                 };
             }
         }
@@ -73,7 +73,7 @@ export const ProductReviewResolver = {
             try {
                 const authUserId = requireAuth(context);
                 if (!authUserId) {
-                    return { status: false, message: "Unauthorized", tag: "Unauthorized" };
+                    return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED" };
                 }
 
                 const userId = authUserId.id;
@@ -89,9 +89,9 @@ export const ProductReviewResolver = {
 
                 if (!saleDoc) {
                     return {
-                        tap: "NO SALE",
                         status: false,
                         message: msg.FOUND_ORDER,
+                        tap: "NOT_FOUND",
                         data: null,
                     };
                 }
@@ -104,9 +104,9 @@ export const ProductReviewResolver = {
 
                 if (!product) {
                     return {
-                        tap: "no product",
                         status: false,
                         message: msg.PRODUCT_NOT_FOUND,
+                        tap: "NOT_FOUND",
                         data: null,
                     };
                 }
@@ -133,9 +133,9 @@ export const ProductReviewResolver = {
                     await productReviewsRepository.save(existingReview);
 
                     return {
-                        tap: "Review updated successfully",
                         status: true,
                         message: msg.SUCCESS,
+                        tap: "UPDATED",
                         data: existingReview,
                     };
                 }
@@ -152,16 +152,16 @@ export const ProductReviewResolver = {
                 await productReviewsRepository.save(review);
 
                 return {
-                    tap: "SUCCESS CREATE YOUR RAT",
                     status: true,
                     message: msg.SUCCESS,
+                    tap: "CREATED",
                     data: review,
                 };
             } catch (error: any) {
                 return {
                     status: false,
                     message: error.message,
-                    tag: "Failed to fetch Order Items",
+                    tap: "ERROR",
                     data: null,
                 };
             }
@@ -171,7 +171,7 @@ export const ProductReviewResolver = {
             try {
                 const authUserId = requireAuth(context);
                 if (!authUserId) {
-                    return { status: false, message: "Unauthorized", tag: "UNAUTHORIZED" };
+                    return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED" };
                 }
 
                 const review = await productReviewsRepository.findOne({
@@ -179,7 +179,7 @@ export const ProductReviewResolver = {
                 });
 
                 if (!review) {
-                    return { status: false, message: "Review not found", tag: "NOT_FOUND" };
+                    return { status: false, message: "Review not found", tap: "NOT_FOUND" };
                 }
 
                 if (input.rating !== undefined) {
@@ -197,14 +197,14 @@ export const ProductReviewResolver = {
                 return {
                     status: true,
                     message: "Review updated successfully",
+                    tap: "UPDATED",
                     data: review,
-                    tag: "REVIEW_UPDATED"
                 };
             } catch (error: any) {
                 return {
                     status: false,
                     message: error.message,
-                    tag: "ERROR",
+                    tap: "ERROR",
                 };
             }
         }
