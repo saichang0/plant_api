@@ -14,10 +14,15 @@ export const purchaseOrderTypeDefs = gql`
     stockReceptions: [StockReception]
   }
 
+  input PurchaseOrderItemInput {
+    productId: ID!
+    quantity: Int!
+    costPrice: Float!
+  }
+
   input CreatePurchaseOrderInput {
     supplierId: ID!
-    totalPrice: Float!
-    status: String
+    items: [PurchaseOrderItemInput!]!
   }
 
   input UpdatePurchaseOrderInput {

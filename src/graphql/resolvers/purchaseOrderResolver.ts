@@ -1,8 +1,10 @@
 import { AppDataSource } from "../../config/db.js";
 import { PurchaseOrders } from "../models/purchaseOrder.entity.js";
+import { PurchaseOrderDetails } from "../models/purchaseOrderDetail.entity.js";
 import { requireAuth } from "@/requireAuth.js";
 
 const purchaseOrderRepository = AppDataSource.getRepository(PurchaseOrders);
+const purchaseOrderDetailRepository = AppDataSource.getRepository(PurchaseOrderDetails);
 
 export const purchaseOrderResolver = {
   Query: {
@@ -60,22 +62,46 @@ export const purchaseOrderResolver = {
     createPurchaseOrder: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
         const authUser = requireAuth(context);
-        const { supplierId, totalPrice, status = 'pending' } = args.input;
+        const { supplierId, items } = args.input;
 
-        const newPurchaseOrder = purchaseOrderRepository.create({
-          supplierId,
-          userId: authUser.id,
-          totalPrice,
-          status,
+        if (!items || items.length === 0) {
+          return { status: false, message: "At least one item is required", tap: "INVALID_INPUT" };
+        }
+
+        // Calculate total price from items
+        const totalPrice = items.reduce((sum: number, item: any) => sum + (item.costPrice * item.quantity), 0);
+
+        // Create purchase order + details in a transaction
+        const result = await AppDataSource.transaction(async (manager) => {
+          const newPurchaseOrder = manager.create(PurchaseOrders, {
+            supplierId,
+            userId: authUser.id,
+            totalPrice,
+            status: 'pending',
+          });
+          const savedOrder = await manager.save(PurchaseOrders, newPurchaseOrder);
+
+          const details = items.map((item: any) =>
+            manager.create(PurchaseOrderDetails, {
+              orderId: savedOrder.id,
+              productId: item.productId,
+              quantity: item.quantity,
+            })
+          );
+          await manager.save(PurchaseOrderDetails, details);
+
+          // Return with relations loaded
+          return manager.findOne(PurchaseOrders, {
+            where: { id: savedOrder.id },
+            relations: ['supplier', 'user', 'purchaseOrderDetails', 'purchaseOrderDetails.product'],
+          });
         });
-
-        const savedPurchaseOrder = await purchaseOrderRepository.save(newPurchaseOrder);
 
         return {
           status: true,
           message: "Purchase order created successfully",
           tap: "CREATED",
-          purchaseOrder: savedPurchaseOrder,
+          purchaseOrder: result,
         };
       } catch (error: any) {
         console.error("Create purchase order error:", error.message);

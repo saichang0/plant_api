@@ -17,7 +17,7 @@ export const supplierResolver = {
 
         const supplier = await supplierRepository.findOne({
           where: { id: supplierId },
-          relations: ['purchaseOrders']
+          relations: ['purchaseOrders', 'creator']
         });
 
         if (!supplier) {
@@ -45,7 +45,7 @@ export const supplierResolver = {
         requireAuth(context);
 
         const suppliers = await supplierRepository.find({
-          relations: ['purchaseOrders']
+          relations: ['purchaseOrders', 'creator']
         });
 
         return {
@@ -68,7 +68,7 @@ export const supplierResolver = {
   Mutation: {
     createSupplier: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        requireAuth(context);
+        const user = requireAuth(context);
 
         const { name, phoneNumber, email, address } = args.input;
 
@@ -93,6 +93,7 @@ export const supplierResolver = {
           phoneNumber,
           email,
           address,
+          createdBy: user.id,
         });
 
         const savedSupplier = await supplierRepository.save(newSupplier);
@@ -150,7 +151,7 @@ export const supplierResolver = {
 
     deleteSupplier: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        requireAuth(context);
+        const user = requireAuth(context);
 
         const supplierId = args.input.id;
 
@@ -164,7 +165,9 @@ export const supplierResolver = {
           return { status: false, message: "Supplier not found", tap: "NOT_FOUND" };
         }
 
-        await supplierRepository.remove(supplier);
+        supplier.deletedBy = user.id;
+        await supplierRepository.save(supplier);
+        await supplierRepository.softRemove(supplier);
 
         return {
           status: true,

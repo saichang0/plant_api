@@ -28,10 +28,10 @@ export const userResolver = {
   Query: {
     getUsers: async (_: any, __: any, context: any): Promise<any> => {
       try {
-        const authUserId = requireAuth(context);
-        if (!authUserId) {
-          return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED", users: [] };
-        }
+        // const authUserId = requireAuth(context);
+        // if (!authUserId) {
+        //   return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED", users: [] };
+        // }
 
         const users = await userRepository.find({
           order: { createdAt: 'DESC' },

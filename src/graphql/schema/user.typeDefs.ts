@@ -13,7 +13,7 @@ export const userTypeDefs = gql`
     phoneNumber: String!
     profileImageUrl: String
     shopName: String
-    email: String!
+    email: String
     role: String!
     status: UserStatus
     otp: String
@@ -29,7 +29,7 @@ export const userTypeDefs = gql`
     firstName: String!
     lastName: String!
     password: String!
-    email: String!
+    email: String
     phoneNumber: String!
     profileImageUrl: String
     shopName: String
@@ -62,16 +62,16 @@ export const userTypeDefs = gql`
   }
 
   input UserRequestOTPInput {
-    email: String!
+    email: String
   }
 
   input UserVerifyOTPInput {
-    email: String!
+    email: String
     otp: String!
   }
 
   input ResetPassword {
-    email: String!
+    email: String
     otp: String!
     newPassword: String!
     confirmPassword: String!

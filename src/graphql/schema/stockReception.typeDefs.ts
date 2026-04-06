@@ -12,6 +12,18 @@ export const stockReceptionTypeDefs = gql`
     stockReceptionDetails: [StockReceptionDetail]
   }
 
+  input ConfirmItemInput {
+    productId: ID!
+    quantityReceived: Int!
+    actualCostPrice: Float!
+    status: String!
+  }
+
+  input ConfirmPurchaseOrderInput {
+    purchaseOrderId: ID!
+    items: [ConfirmItemInput!]!
+  }
+
   input CreateStockReceptionInput {
     purchaseOrderId: ID
     totalActualPrice: Float!
@@ -46,6 +58,7 @@ export const stockReceptionTypeDefs = gql`
   }
 
   type Mutation {
+    confirmPurchaseOrder(input: ConfirmPurchaseOrderInput!): StockReceptionResponse
     createStockReception(input: CreateStockReceptionInput!): StockReceptionResponse
     updateStockReception(input: UpdateStockReceptionInput!): StockReceptionResponse
     deleteStockReception(input: DeleteStockReceptionInput!): StockReceptionResponse

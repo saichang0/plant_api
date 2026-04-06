@@ -7,6 +7,10 @@ export const SupplierTypeDefs = gql`
     phoneNumber: String!
     email: String!
     address: String!
+    createdAt: String
+    updatedAt: String
+    createdBy: String
+    creator: User
     purchaseOrders: [PurchaseOrder]
   }
 

@@ -20,9 +20,17 @@ export const stockReceptionDetailTypeDefs = gql`
     status: String
   }
 
+  input UpdateStockReceptionDetailData {
+    receptionId: ID
+    productId: ID
+    quantityReceived: Int
+    actualCostPrice: Float
+    status: String
+  }
+
   input UpdateStockReceptionDetailInput {
     id: ID!
-    data: CreateStockReceptionDetailInput!
+    data: UpdateStockReceptionDetailData!
   }
 
   input DeleteStockReceptionDetailInput {

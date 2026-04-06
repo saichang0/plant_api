@@ -23,12 +23,6 @@ export class Products {
   @Column({ type: 'uuid' })
   categoryId: string;
 
-  @Column({ type: 'uuid', nullable: true })
-  createdBy?: string;
-
-  @Column({ type: 'uuid', nullable: true })
-  deletedBy?: string;
-
   @Column({ type: 'varchar', length: 255 })
   name: string;
 
@@ -68,15 +62,6 @@ export class Products {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ type: 'timestamp' })
-  updatedAt: Date;
-
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deletedAt?: Date;
-
   @ManyToOne(() => Categories, (cat) => cat.products)
   category: Categories;
 
@@ -94,4 +79,19 @@ export class Products {
 
   @OneToMany(() => StockReceptionDetails, (srd) => srd.product)
   stockReceptionDetails: StockReceptionDetails[];
+
+  @CreateDateColumn({ type: 'timestamp' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updatedAt: Date;
+
+  @DeleteDateColumn({ type: 'timestamp', nullable: true })
+  deletedAt?: Date;
+
+  @Column({ type: 'uuid', nullable: true })
+  createdBy?: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  deletedBy?: string;
 }

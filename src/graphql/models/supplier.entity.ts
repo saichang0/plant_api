@@ -1,5 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn, OneToMany } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, OneToMany, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from "typeorm";
 import { PurchaseOrders } from "./purchaseOrder.entity.js";
+import { Users } from "./user.entity.js";
 
 @Entity('suppliers')
 export class Suppliers {
@@ -21,4 +22,23 @@ export class Suppliers {
     // Relations
     @OneToMany(() => PurchaseOrders, (order) => order.supplier)
     purchaseOrders: PurchaseOrders[];
+
+    @CreateDateColumn({ type: 'timestamp' })
+    createdAt: Date;
+
+    @UpdateDateColumn({ type: 'timestamp' })
+    updatedAt: Date;
+
+    @DeleteDateColumn({ type: 'timestamp', nullable: true })
+    deletedAt?: Date;
+
+    @Column({ type: 'uuid', nullable: true })
+    createdBy?: string;
+
+    @ManyToOne(() => Users)
+    @JoinColumn({ name: 'createdBy' })
+    creator?: Users;
+
+    @Column({ type: 'uuid', nullable: true })
+    deletedBy?: string;
 }
