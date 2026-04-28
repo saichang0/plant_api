@@ -8,6 +8,7 @@ export const stockReceptionDetailTypeDefs = gql`
     quantityReceived: Int!
     actualCostPrice: Float!
     status: String!
+    unit: Unit
     reception: StockReception
     product: Product
   }
@@ -18,6 +19,7 @@ export const stockReceptionDetailTypeDefs = gql`
     quantityReceived: Int!
     actualCostPrice: Float!
     status: String
+    unitId: ID
   }
 
   input UpdateStockReceptionDetailData {
@@ -26,6 +28,7 @@ export const stockReceptionDetailTypeDefs = gql`
     quantityReceived: Int
     actualCostPrice: Float
     status: String
+    unitId: ID
   }
 
   input UpdateStockReceptionDetailInput {

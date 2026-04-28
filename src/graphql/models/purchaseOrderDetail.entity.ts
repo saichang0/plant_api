@@ -1,6 +1,7 @@
 import { Column, Entity, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
 import { PurchaseOrders } from "./purchaseOrder.entity.js";
 import { Products } from "./product.entity.js";
+import { Units } from "./unit.entity.js";
 
 @Entity('purchaseOrderDetails')
 export class PurchaseOrderDetails {
@@ -22,4 +23,7 @@ export class PurchaseOrderDetails {
 
     @ManyToOne(() => Products, (product) => product.purchaseOrderDetails)
     product: Products;
+
+    @ManyToOne(() => Units, (unit) => unit.purchaseOrderDetails)
+    unit: Units;
 }

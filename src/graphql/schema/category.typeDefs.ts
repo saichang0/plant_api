@@ -4,7 +4,10 @@ export const categoryTypeDefs = gql`
   type Category {
     id: ID!
     name: String!
+    createdBy: ID
+    createdAt: String
     products: [Product]
+    creator: User
   }
 
   input CreateCategoryInput {
@@ -13,7 +16,11 @@ export const categoryTypeDefs = gql`
 
   input UpdateCategoryInput {
     id: ID!
-    data: CreateCategoryInput!
+    data: UpdateCategoryDataInput!
+  }
+
+  input UpdateCategoryDataInput {
+    name: String!
   }
 
   input DeleteCategoryInput {

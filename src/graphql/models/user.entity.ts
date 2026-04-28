@@ -35,6 +35,9 @@ export class Users {
     @Column({ type: 'varchar', length: 100, nullable: true })
     shopName?: string;
 
+    @Column({ type: 'text', nullable: true })
+    bankAccountImageUrl?: string;
+
     @Column({ type: 'varchar', length: 20, default: 'staff' })
     role: string;
 

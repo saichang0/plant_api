@@ -1,6 +1,6 @@
 import { AppDataSource } from "../../config/db.js";
 import { Suppliers } from "../models/supplier.entity.js";
-import { requireAuth } from "../../requireAuth.js";
+import { requireOwner } from "../../requireAuth.js";
 
 const supplierRepository = AppDataSource.getRepository(Suppliers);
 
@@ -8,7 +8,7 @@ export const supplierResolver = {
   Query: {
     getSupplier: async (_: any, args: { id: string }, context: any): Promise<any> => {
       try {
-        requireAuth(context);
+        const { owned } = requireOwner(context);
 
         const supplierId = args.id;
         if (!supplierId || supplierId.trim() === '') {
@@ -16,7 +16,7 @@ export const supplierResolver = {
         }
 
         const supplier = await supplierRepository.findOne({
-          where: { id: supplierId },
+          where: { id: supplierId, ...owned },
           relations: ['purchaseOrders', 'creator']
         });
 
@@ -42,9 +42,10 @@ export const supplierResolver = {
 
     getSuppliers: async (_: any, __: any, context: any): Promise<any> => {
       try {
-        requireAuth(context);
+        const { owned } = requireOwner(context);
 
         const suppliers = await supplierRepository.find({
+          where: { ...owned },
           relations: ['purchaseOrders', 'creator']
         });
 
@@ -68,14 +69,14 @@ export const supplierResolver = {
   Mutation: {
     createSupplier: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const user = requireAuth(context);
+        const { user, owned } = requireOwner(context);
 
         const { name, phoneNumber, email, address } = args.input;
 
         const existingSupplier = await supplierRepository.findOne({
           where: [
-            { phoneNumber },
-            { email }
+            { phoneNumber, ...owned },
+            { email, ...owned }
           ]
         });
 
@@ -116,7 +117,7 @@ export const supplierResolver = {
 
     updateSupplier: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        requireAuth(context);
+        const { owned } = requireOwner(context);
 
         const { id, data } = args.input;
 
@@ -124,7 +125,7 @@ export const supplierResolver = {
           return { status: false, message: "Invalid supplier ID", tap: "INVALID_INPUT" };
         }
 
-        const supplier = await supplierRepository.findOneBy({ id });
+        const supplier = await supplierRepository.findOneBy({ id, ...owned });
 
         if (!supplier) {
           return { status: false, message: "Supplier not found", tap: "NOT_FOUND" };
@@ -151,7 +152,7 @@ export const supplierResolver = {
 
     deleteSupplier: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const user = requireAuth(context);
+        const { user, owned } = requireOwner(context);
 
         const supplierId = args.input.id;
 
@@ -159,7 +160,7 @@ export const supplierResolver = {
           return { status: false, message: "Invalid supplier ID", tap: "INVALID_INPUT" };
         }
 
-        const supplier = await supplierRepository.findOneBy({ id: supplierId });
+        const supplier = await supplierRepository.findOneBy({ id: supplierId, ...owned });
 
         if (!supplier) {
           return { status: false, message: "Supplier not found", tap: "NOT_FOUND" };

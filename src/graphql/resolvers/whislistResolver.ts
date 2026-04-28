@@ -4,14 +4,17 @@ import { AppDataSource } from '../../config/db.js';
 import { Products } from '../models/product.entity.js';
 import { Wishlists } from '../models/wishList.entity.js';
 import { Customers } from '../models/customer.entity.js';
+import { ProductViews } from '../models/productView.entity.js';
 
 const wishlistRepository = AppDataSource.getRepository(Wishlists);
 const productRepository = AppDataSource.getRepository(Products);
 const customerRepository = AppDataSource.getRepository(Customers);
+const productViewRepository = AppDataSource.getRepository(ProductViews);
 
 export const wishlistResolver = {
     Query: {
         wishlists: async (_: any, __: any, context: any): Promise<any> => {
+            console.log("Fetching wishlists for user...");
             try {
                 const current = requireAuth(context);
 
@@ -30,7 +33,15 @@ export const wishlistResolver = {
 
                 const wishlists = await wishlistRepository.find({
                     where: { customerId: customer.id },
-                    relations: ['product']
+                    relations: [
+                        'product',
+                        'product.unit',
+                        'product.category',
+                        'product.creator',
+                        'product.productViews',
+                        'product.productReviews',
+                    ],
+                    order: { createdAt: 'DESC' },
                 });
 
                 const result = wishlists.map((w) => ({
@@ -39,16 +50,17 @@ export const wishlistResolver = {
                     productId: w.productId,
                     createdAt: w.createdAt,
                     product: w.product ? {
-                        id: w.product.id,
-                        name: w.product.name,
-                        price: w.product.salePrice,
-                        description: w.product.description,
-                        stockQuantity: w.product.stockQuantity,
-                        isPopular: w.product.isPopular,
-                        isSpecialOffer: w.product.isSpecialOffer,
-                        discount: w.product.discount,
-                        isActive: w.product.isActive,
-                    } : null
+                        ...w.product,
+                        owner: w.product.creator ? {
+                            id: w.product.creator.id,
+                            firstName: w.product.creator.firstName,
+                            lastName: w.product.creator.lastName,
+                            shopName: w.product.creator.shopName,
+                            profileImageUrl: w.product.creator.profileImageUrl,
+                            bankAccountImageUrl: w.product.creator.bankAccountImageUrl,
+                        } : null,
+                        isFavorite: true,
+                    } : null,
                 }));
 
                 return {
@@ -137,6 +149,23 @@ export const wishlistResolver = {
                 });
 
                 const saved = await wishlistRepository.save(newWishlist);
+
+                // Adding to wishlist also counts as a view signal on the product.
+                productRepository
+                    .increment({ id: prodId }, 'viewsCount', 1)
+                    .catch((e) => console.error('viewsCount increment failed:', e));
+
+                // Log a ProductView row tied to this customer (best-effort).
+                try {
+                    const view = productViewRepository.create({
+                        productId: prodId,
+                        customerId: customer.id,
+                        source: 'wishlist',
+                    });
+                    await productViewRepository.save(view);
+                } catch (e) {
+                    console.error('ProductView insert (wishlist) failed:', e);
+                }
 
                 return {
                     status: true,

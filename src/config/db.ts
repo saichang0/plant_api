@@ -5,6 +5,7 @@ import { Products } from '@/graphql/models/product.entity.js';
 import { Wishlists } from '@/graphql/models/wishList.entity.js';
 import { Users } from '@/graphql/models/user.entity.js';
 import { ProductReviews } from '@/graphql/models/productReview.entity.js';
+import { ProductViews } from '@/graphql/models/productView.entity.js';
 import { Categories } from '@/graphql/models/category.entity.js';
 import { Customers } from '@/graphql/models/customer.entity.js';
 import { Deliveries } from '@/graphql/models/delivery.entity.js';
@@ -16,6 +17,8 @@ import { SaleDetails } from '@/graphql/models/saleDetail.entity.js';
 import { StockReceptions } from '@/graphql/models/stockReception.entity.js';
 import { StockReceptionDetails } from '@/graphql/models/stockReceptionDetail.entity.js';
 import { Suppliers } from '@/graphql/models/supplier.entity.js';
+import { Units } from '@/graphql/models/unit.entity.js';
+import { CustomerAddresses } from '@/graphql/models/customerAddress.entity.js';
 
 dotenv.config();
 
@@ -29,6 +32,7 @@ export const AppDataSource = new DataSource({
     Products,
     Wishlists,
     ProductReviews,
+    ProductViews,
     Categories,
     Customers,
     Deliveries,
@@ -40,5 +44,7 @@ export const AppDataSource = new DataSource({
     StockReceptions,
     StockReceptionDetails,
     Suppliers,
+    Units,
+    CustomerAddresses,
   ],
 });

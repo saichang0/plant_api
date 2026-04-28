@@ -32,6 +32,12 @@ import { stockReceptionDetailTypeDefs } from './schema/stockReceptionDetail.type
 import { stockReceptionDetailResolver } from './resolvers/stockReceptionDetailResolver.js';
 import { dashboardTypeDefs } from './schema/dashboard.typeDefs.js';
 import { dashboardResolver } from './resolvers/dashboardResolver.js';
+import { unitTypeDefs } from './schema/unit.typeDefs.js';
+import { unitResolver } from './resolvers/unitResolver.js';
+import { reportTypeDefs } from './schema/report.typeDefs.js';
+import { reportResolver } from './resolvers/reportResolver.js';
+import { customerAddressTypeDefs } from './schema/customerAddress.typeDefs.js';
+import { customerAddressResolver } from './resolvers/customerAddressResolver.js';
 const typeDefs = mergeTypeDefs([
   CustomerTypeDefs,
   productTypeDefs,
@@ -49,6 +55,9 @@ const typeDefs = mergeTypeDefs([
   stockReceptionTypeDefs,
   stockReceptionDetailTypeDefs,
   dashboardTypeDefs,
+  unitTypeDefs,
+  reportTypeDefs,
+  customerAddressTypeDefs,
 ]);
 
 const resolvers = mergeResolvers([
@@ -68,6 +77,9 @@ const resolvers = mergeResolvers([
   stockReceptionResolver,
   stockReceptionDetailResolver,
   dashboardResolver,
+  unitResolver,
+  reportResolver,
+  customerAddressResolver,
 ]);
 
 export const schema = makeExecutableSchema({

@@ -5,8 +5,9 @@ export const deliveryTypeDefs = gql`
     id: ID!
     saleId: ID!
     deliveryService: String!
+    branch: String
     trackingNumber: String
-    status: String!
+    status: DeliveryStatus!
     shippedAt: String
     sale: Sale
   }
@@ -14,13 +15,28 @@ export const deliveryTypeDefs = gql`
   input CreateDeliveryInput {
     saleId: ID!
     deliveryService: String!
+    branch: String
     trackingNumber: String
-    status: String
+    status: DeliveryStatus!
+  }
+
+  enum DeliveryStatus {
+    PACKING
+    SHIPPING
+    SHIPPED
+    DELIVERED
+  }
+
+  input UpdateDeliveryDataInput {
+    deliveryService: String
+    branch: String
+    trackingNumber: String
+    status: DeliveryStatus
   }
 
   input UpdateDeliveryInput {
     id: ID!
-    data: CreateDeliveryInput!
+    data: UpdateDeliveryDataInput!
   }
 
   input DeleteDeliveryInput {
@@ -38,12 +54,15 @@ export const deliveryTypeDefs = gql`
     status: Boolean!
     message: String!
     tap: String
+    total: Int
     deliveries: [Delivery]
   }
 
   type Query {
     getDelivery(id: ID!): DeliveryResponse
-    getDeliveries: DeliveriesResponse
+    # Owner-scoped. Pass saleStatus="confirmed" + deliveryStatus="packing"
+    # to get orders the shop has confirmed but not yet shipped.
+    getDeliveries(saleStatus: String, deliveryStatus: String): DeliveriesResponse
   }
 
   type Mutation {

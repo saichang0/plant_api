@@ -1,15 +1,15 @@
-import { requireAuth } from "@/requireAuth.js";
+import { requireAuth, requireCustomer } from "@/requireAuth.js";
 import { msg } from '../../constants/massages.js';
 import { AppDataSource } from '../../config/db.js';
 import { Products } from "../models/product.entity.js";
 import { Wishlists } from "../models/wishList.entity.js";
 import { uploadToCloudinary } from "@/utils/uploadImage.js";
-import { ProductReviews } from "../models/productReview.entity.js";
+import { ProductViews } from "../models/productView.entity.js";
 import { Like, In } from 'typeorm';
 
 const productRepository = AppDataSource.getRepository(Products);
 const wishlistRepository = AppDataSource.getRepository(Wishlists);
-const productViewRepository = AppDataSource.getRepository(ProductReviews)
+const productViewRepository = AppDataSource.getRepository(ProductViews);
 
 export const productResolver = {
     Query: {
@@ -22,7 +22,7 @@ export const productResolver = {
                 const limit = paginate?.limit || 50;
                 const skip = (page - 1) * limit;
 
-                let whereClause: any = { isActive: true };
+                let whereClause: any = { isActive: true, createdBy: authUserId.id };
 
                 if (filter) {
                     if (filter.isSpecialOffer !== undefined && filter.isSpecialOffer !== null) {
@@ -57,6 +57,7 @@ export const productResolver = {
                 // Get products with pagination
                 const products = await productRepository.find({
                     where: whereClause,
+                    relations: ['unit', 'category'],
                     skip: skip,
                     take: limit,
                     order: {
@@ -99,6 +100,7 @@ export const productResolver = {
                 // Map products with favorite status
                 const data = products.map(product => ({
                     ...product,
+
                     isFavorite: wishlistProductIds.has(product.id),
                     productViews: productViewMap[product.id] ?? [],
                 }));
@@ -137,7 +139,10 @@ export const productResolver = {
                     if (!productId || productId.trim() === '') {
                         return { status: false, message: "Invalid product ID", tap: "INVALID_INPUT" };
                     }
-                    product = await productRepository.findOneBy({ id: productId, isActive: true });
+                    product = await productRepository.findOne({
+                        where: { id: productId, isActive: true, createdBy: authUserId.id },
+                        relations: ['unit', 'category'],
+                    });
                 }
                 if (!product) {
                     return { status: false, message: msg.NOT_FOUND || "Not found", tap: "NOT_FOUND" };
@@ -158,6 +163,7 @@ export const productResolver = {
                     tap: "FOUND",
                     data: {
                         ...product,
+    
                         isFavorite: wishlistProductIds.has(product.id),
                     },
                 };
@@ -169,7 +175,140 @@ export const productResolver = {
                     tap: "ERROR",
                 };
             }
-        }
+        },
+
+        // ─── Customer-facing: browse ALL shops' products ───────────────
+        publicProducts: async (_: any, args: any, context: any) => {
+            try {
+                const authCustomer = requireCustomer(context);
+
+                const { keyword, filter, paginate, shopId } = args;
+                const page = paginate?.page || 1;
+                const limit = paginate?.limit || 50;
+                const skip = (page - 1) * limit;
+
+                const whereClause: any = { isActive: true };
+                if (shopId) whereClause.createdBy = shopId;
+
+                if (filter) {
+                    if (filter.isSpecialOffer !== undefined && filter.isSpecialOffer !== null) {
+                        whereClause.isSpecialOffer = filter.isSpecialOffer;
+                    }
+                    if (filter.isPopular !== undefined && filter.isPopular !== null) {
+                        whereClause.isPopular = filter.isPopular;
+                    }
+                }
+
+                if (keyword && keyword.trim() !== '') {
+                    whereClause.name = Like(`%${keyword.trim()}%`);
+                }
+
+                const [products, total] = await productRepository.findAndCount({
+                    where: whereClause,
+                    relations: ['unit', 'category', 'creator', 'productViews', 'productReviews'],
+                    skip,
+                    take: limit,
+                    order: { createdAt: 'DESC' },
+                });
+
+                // Customer's wishlist
+                const wishlists = await wishlistRepository.find({
+                    where: { customerId: authCustomer.id } as any,
+                });
+                const wishlistProductIds = new Set(wishlists.map(w => w.productId));
+
+                const data = products.map(p => ({
+                    ...p,
+                    owner: p.creator ? {
+                        id: p.creator.id,
+                        firstName: p.creator.firstName,
+                        lastName: p.creator.lastName,
+                        shopName: p.creator.shopName,
+                        profileImageUrl: p.creator.profileImageUrl,
+                        bankAccountImageUrl: p.creator.bankAccountImageUrl,
+                    } : null,
+                    isFavorite: wishlistProductIds.has(p.id),
+                    productViews: p.productViews ?? [],
+                    productReviews: p.productReviews ?? [],
+                }));
+
+                return {
+                    status: true,
+                    message: "Products fetched",
+                    tap: "FETCHED",
+                    data,
+                    total,
+                };
+            } catch (error: any) {
+                console.error("publicProducts error:", error.message);
+                return { status: false, message: error.message || "Failed", tap: "ERROR", data: [], total: 0 };
+            }
+        },
+
+        publicProduct: async (_: any, { id }: any, context: any): Promise<any> => {
+            try {
+                const authCustomer = requireCustomer(context);
+
+                if (!id || id.trim() === '') {
+                    return { status: false, message: "Invalid product ID", tap: "INVALID_INPUT" };
+                }
+
+                const product = await productRepository.findOne({
+                    where: { id, isActive: true },
+                    relations: ['unit', 'category', 'creator', 'productViews', 'productReviews'],
+                });
+
+                if (!product) {
+                    return { status: false, message: msg.NOT_FOUND || "Not found", tap: "NOT_FOUND" };
+                }
+
+                // Bump views counter on detail open. Best-effort, never blocks the response.
+                productRepository
+                    .increment({ id: product.id }, 'viewsCount', 1)
+                    .catch((e) => console.error('viewsCount increment failed:', e));
+                product.viewsCount = (product.viewsCount ?? 0) + 1;
+
+                // Log a ProductView row tied to this customer (best-effort).
+                try {
+                    const view = productViewRepository.create({
+                        productId: product.id,
+                        customerId: authCustomer.id,
+                        source: 'detail',
+                    });
+                    const savedView = await productViewRepository.save(view);
+                    product.productViews = [...(product.productViews ?? []), savedView];
+                } catch (e) {
+                    console.error('ProductView insert (detail) failed:', e);
+                }
+
+                const wishlist = await wishlistRepository.findOne({
+                    where: { customerId: authCustomer.id, productId: product.id } as any,
+                });
+
+                return {
+                    status: true,
+                    message: "Product found",
+                    tap: "FOUND",
+                    data: {
+                        ...product,
+                        owner: product.creator ? {
+                            id: product.creator.id,
+                            firstName: product.creator.firstName,
+                            lastName: product.creator.lastName,
+                            shopName: product.creator.shopName,
+                            profileImageUrl: product.creator.profileImageUrl,
+                            bankAccountImageUrl: product.creator.bankAccountImageUrl,
+                        } : null,
+                        isFavorite: !!wishlist,
+                        productViews: product.productViews ?? [],
+                        productReviews: product.productReviews ?? [],
+                    },
+                };
+            } catch (error: any) {
+                console.error("publicProduct error:", error);
+                return { status: false, message: error.message || "Failed", tap: "ERROR" };
+            }
+        },
     },
 
     Mutation: {
@@ -230,7 +369,7 @@ export const productResolver = {
                     return { status: false, message: "Invalid product ID", tap: "INVALID_INPUT" };
                 }
 
-                const existingProduct = await productRepository.findOne({ where: { id: productId } });
+                const existingProduct = await productRepository.findOne({ where: { id: productId, createdBy: authUser.id } });
                 if (!existingProduct) {
                     return { status: false, message: msg.NOT_FOUND || "Product not found", tap: "NOT_FOUND" };
                 }
@@ -300,7 +439,7 @@ export const productResolver = {
                 }
 
                 const existingProduct = await productRepository.findOne({
-                    where: { id: productId }
+                    where: { id: productId, createdBy: authUser.id }
                 });
 
                 if (!existingProduct) {

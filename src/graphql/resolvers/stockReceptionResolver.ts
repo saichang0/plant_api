@@ -2,6 +2,7 @@ import { AppDataSource } from "../../config/db.js";
 import { StockReceptions } from "../models/stockReception.entity.js";
 import { StockReceptionDetails } from "../models/stockReceptionDetail.entity.js";
 import { PurchaseOrders } from "../models/purchaseOrder.entity.js";
+import { Products } from "../models/product.entity.js";
 import { requireAuth } from "@/requireAuth.js";
 
 const stockReceptionRepository = AppDataSource.getRepository(StockReceptions);
@@ -91,7 +92,7 @@ export const stockReceptionResolver = {
           });
           const savedReception = await manager.save(StockReceptions, newReception);
 
-          // Create stock reception details only for received items
+          // Create stock reception details + INCREASE product stock
           const receivedItems = items.filter((item: any) => item.status === 'received');
           if (receivedItems.length > 0) {
             const details = receivedItems.map((item: any) =>
@@ -104,6 +105,25 @@ export const stockReceptionResolver = {
               })
             );
             await manager.save(StockReceptionDetails, details);
+
+            // Add received quantity to product stock
+            for (const item of receivedItems) {
+              const product = await manager.findOneBy(Products, { id: item.productId });
+              if (product) {
+                const qty = Math.ceil(Number(item.quantityReceived));
+                const weightPerUnit = Number(product.weightPerUnit) || 0;
+
+                product.stockQuantity = product.stockQuantity + qty;
+                if (weightPerUnit > 0) {
+                  product.stockWeight = Number(product.stockWeight) + (qty * weightPerUnit);
+                }
+                // Update cost price to latest actual cost
+                if (item.actualCostPrice) {
+                  product.costPrice = Number(item.actualCostPrice);
+                }
+                await manager.save(Products, product);
+              }
+            }
           }
 
           // Update purchase order status to 'received'

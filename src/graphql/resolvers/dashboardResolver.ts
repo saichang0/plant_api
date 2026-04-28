@@ -4,7 +4,7 @@ import { SaleDetails } from "../models/saleDetail.entity.js";
 import { Products } from "../models/product.entity.js";
 import { PurchaseOrders } from "../models/purchaseOrder.entity.js";
 import { requireAuth } from "@/requireAuth.js";
-import { Between, MoreThanOrEqual } from "typeorm";
+import { MoreThanOrEqual } from "typeorm";
 
 const saleRepository = AppDataSource.getRepository(Sale);
 const saleDetailRepository = AppDataSource.getRepository(SaleDetails);
@@ -37,7 +37,8 @@ export const dashboardResolver = {
   Query: {
     getDashboard: async (_: any, __: any, context: any): Promise<any> => {
       try {
-        requireAuth(context);
+        const authUser = requireAuth(context);
+        const userId = authUser.id;
 
         const now = new Date();
         const todayStart = startOfDay(now);
@@ -51,38 +52,38 @@ export const dashboardResolver = {
 
         // Today's sales
         const todaySales = await saleRepository.find({
-          where: { saleDate: MoreThanOrEqual(todayStart) },
+          where: { saleDate: MoreThanOrEqual(todayStart), userId },
         });
         const todayTotal = todaySales.reduce((sum, s) => sum + Number(s.totalAmount), 0);
         const todayOrderCount = todaySales.length;
 
         // This week's sales
         const weekSales = await saleRepository.find({
-          where: { saleDate: MoreThanOrEqual(weekStart) },
+          where: { saleDate: MoreThanOrEqual(weekStart), userId },
         });
         const weekTotal = weekSales.reduce((sum, s) => sum + Number(s.totalAmount), 0);
         const weekOrderCount = weekSales.length;
 
         // This month's sales
         const monthSales = await saleRepository.find({
-          where: { saleDate: MoreThanOrEqual(monthStart) },
+          where: { saleDate: MoreThanOrEqual(monthStart), userId },
         });
         const monthTotal = monthSales.reduce((sum, s) => sum + Number(s.totalAmount), 0);
         const monthOrderCount = monthSales.length;
 
-        // Total products & low stock
-        const allProducts = await productRepository.find();
+        // Total products & low stock (scoped to owner)
+        const allProducts = await productRepository.find({ where: { createdBy: userId } });
         const totalProducts = allProducts.length;
         const lowStockCount = allProducts.filter(p => p.stockQuantity <= 5).length;
 
-        // Pending purchase orders
+        // Pending purchase orders (scoped to owner)
         const pendingPOs = await purchaseOrderRepository.count({
-          where: { status: 'pending' },
+          where: { status: 'pending', userId },
         });
 
         // Daily stats (last 30 days)
         const last30DaysSales = await saleRepository.find({
-          where: { saleDate: MoreThanOrEqual(thirtyDaysAgo) },
+          where: { saleDate: MoreThanOrEqual(thirtyDaysAgo), userId },
         });
 
         const dailyMap = new Map<string, { totalSales: number; orderCount: number }>();
@@ -114,7 +115,7 @@ export const dashboardResolver = {
         eightWeeksAgo.setHours(0, 0, 0, 0);
 
         const last8WeeksSales = await saleRepository.find({
-          where: { saleDate: MoreThanOrEqual(eightWeeksAgo) },
+          where: { saleDate: MoreThanOrEqual(eightWeeksAgo), userId },
         });
 
         const weeklyMap = new Map<string, { totalSales: number; orderCount: number }>();
@@ -145,9 +146,11 @@ export const dashboardResolver = {
           orderCount: data.orderCount,
         }));
 
-        // Top selling products (all time, top 5)
+        // Top selling products (scoped to owner's sales)
         const topProductsRaw = await saleDetailRepository
           .createQueryBuilder('sd')
+          .innerJoin('sd.sale', 'sale')
+          .where('sale.userId = :userId', { userId })
           .select('sd.productId', 'productId')
           .addSelect('SUM(sd.quantity)', 'totalQuantity')
           .addSelect('SUM(sd.totalPrice)', 'totalRevenue')

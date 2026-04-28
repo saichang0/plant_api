@@ -1,29 +1,55 @@
 import { gql } from "graphql-tag";
 
 export const productTypeDefs = gql`
+    type ProductView {
+        id: ID!
+        productId: ID!
+        customerId: ID!
+        source: String
+        createdAt: String
+    }
+
     type Product {
         id: ID!
         categoryId: ID
+        category: Category
         name: String
         imageUrl: String
         description: String
         size: String
         ageMonths: Int
+        unit: Unit
+        weightPerUnit: Float
         stockQuantity: Int
+        stockWeight: Float
         costPrice: Float
         salePrice: Float
+        pricePerHalfBag: Float
+        pricePer12Kg: Float
+        pricePerKg: Float
         isPopular: Boolean
         isSpecialOffer: Boolean
         discount: Float
         isActive: Boolean
+        viewsCount: Int
         createdBy: ID
         deletedBy: ID
         createdAt: String
         updatedAt: String
         deletedAt: String
+        productViews: [ProductView]
         productReviews: [ProductReview]
-        productViews: [ProductReview]
         isFavorite: Boolean
+        owner: ProductOwner
+    }
+
+    type ProductOwner {
+        id: ID!
+        firstName: String!
+        lastName: String!
+        shopName: String
+        profileImageUrl: String
+        bankAccountImageUrl: String
     }
 
     input ProductInput {
@@ -33,9 +59,16 @@ export const productTypeDefs = gql`
         description: String
         size: String
         ageMonths: Int
+        unitId: ID
+        weightPerUnit: Float
+
         stockQuantity: Int
+        stockWeight: Float
         costPrice: Float
         salePrice: Float
+        pricePerHalfBag: Float
+        pricePer12Kg: Float
+        pricePerKg: Float
         isPopular: Boolean
         isSpecialOffer: Boolean
         discount: Float
@@ -78,11 +111,18 @@ export const productTypeDefs = gql`
 
     type Query {
         products(
-           keyword: String, 
+           keyword: String,
            paginate: PaginationInput,
            filter: FilterInputProduct,
         ): ProductsResponse
         product(where: entityInput): ProductResponse
+        publicProducts(
+           keyword: String,
+           paginate: PaginationInput,
+           filter: FilterInputProduct,
+           shopId: ID,
+        ): ProductsResponse
+        publicProduct(id: ID!): ProductResponse
     }
 
     type Mutation {

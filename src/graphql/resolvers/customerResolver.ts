@@ -6,6 +6,7 @@ import { AppDataSource } from "../../config/db.js";
 import { Customers } from "../models/customer.entity.js";
 import { AuthResponse, Response } from '../../types/auth.js';
 import { requireAuth } from '@/requireAuth.js';
+import { log } from 'console';
 
 const generateCustomerToken = (customer: any) => {
   const accessToken = jwt.sign(
@@ -68,6 +69,7 @@ export const customerResolver = {
 
   Mutation: {
     createCustomer: async (_: any, { data }: { data: any }): Promise<AuthResponse> => {
+      log('Creating customer with data:', data);
       try {
         const existingCustomer = await customerRepository.findOne({
           where: [

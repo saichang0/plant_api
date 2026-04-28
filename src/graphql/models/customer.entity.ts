@@ -26,9 +26,6 @@ export class Customers {
     @Column({ type: 'varchar', length: 100, nullable: true })
     password?: string;
 
-    @Column({ type: 'text' })
-    address: string;
-
     @Column({ type: 'varchar', length: 6, nullable: true })
     otp?: string;
 

@@ -5,7 +5,7 @@ import { sendOTPEmail } from "@/utils/emailService.js";
 import { Users } from "../models/user.entity.js";
 import { Customers } from "../models/customer.entity.js";
 import { msg } from '@/constants/massages.js';
-import { requireAuth } from '@/requireAuth.js';
+import { requireAuth, requireRole } from '@/requireAuth.js';
 
 const userRepository = AppDataSource.getRepository(Users);
 const customerRepository = AppDataSource.getRepository(Customers);
@@ -153,20 +153,18 @@ export const userResolver = {
 
     updateUser: async (_: any, args: { input: any }, context: any): Promise<any> => {
       try {
-        const authUserId = requireAuth(context);
-        if (!authUserId) {
-          return {
-            status: false,
-            message: "Unauthorized",
-            tap: "UNAUTHORIZED",
-          };
-        }
+        const authUser = requireAuth(context);
 
         const { id, data } = args.input;
         const userId = id;
 
         if (!userId || userId.trim() === '') {
           return { status: false, message: "Invalid user ID", tap: "INVALID_INPUT" };
+        }
+
+        // Users can only update their own profile (unless admin)
+        if (authUser.id !== userId && authUser.role !== "admin") {
+          return { status: false, message: "Forbidden: you can only update your own profile", tap: "FORBIDDEN" };
         }
 
         const user = await userRepository.findOneBy({ id: userId });
@@ -203,10 +201,7 @@ export const userResolver = {
 
     deleteUser: async (_: any, args: { input: { id: string } }, context: any): Promise<any> => {
       try {
-        const authUserId = requireAuth(context);
-        if (!authUserId) {
-          return { status: false, message: "Unauthorized", tap: "UNAUTHORIZED" };
-        }
+        requireRole(context, "admin");
 
         const userId = args.input.id;
         if (!userId || userId.trim() === '') {

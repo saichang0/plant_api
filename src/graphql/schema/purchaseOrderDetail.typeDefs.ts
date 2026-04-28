@@ -6,6 +6,7 @@ export const purchaseOrderDetailTypeDefs = gql`
     orderId: ID!
     productId: ID!
     quantity: Int!
+    unit: Unit
     order: PurchaseOrder
     product: Product
   }
@@ -14,6 +15,7 @@ export const purchaseOrderDetailTypeDefs = gql`
     orderId: ID!
     productId: ID!
     quantity: Int!
+    unitId: ID
   }
 
   input UpdatePurchaseOrderDetailInput {

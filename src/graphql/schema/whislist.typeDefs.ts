@@ -2,15 +2,15 @@ import { gql } from 'graphql-tag';
 
 export const wishlistTypeDefs = gql`
   type Wishlist {
-    _id: String!
-    userId: String!
+    id: String!
+    customerId: String!
     productId: String!
-    product: Product 
+    product: Product
   }
 
   type iswhislist {
-   _id: String!
-    userId: String!
+    id: String!
+    customerId: String!
     productId: String!
     isFavorite: Boolean!
   }

@@ -13,6 +13,7 @@ export const userTypeDefs = gql`
     phoneNumber: String!
     profileImageUrl: String
     shopName: String
+    bankAccountImageUrl: String
     email: String
     role: String!
     status: UserStatus
@@ -43,6 +44,7 @@ export const userTypeDefs = gql`
     password: String
     profileImageUrl: String
     shopName: String
+    bankAccountImageUrl: String
     role: String
     status: UserStatus
   }

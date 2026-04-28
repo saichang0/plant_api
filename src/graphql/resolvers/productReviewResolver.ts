@@ -80,11 +80,13 @@ export const ProductReviewResolver = {
                 const productId = input.productId;
                 const saleId = input.saleId;
 
+                // If the caller is a customer, look up the sale by customerId
+                // else (shop staff), look up by userId
+                const isCustomer = authUserId.role === 'customer';
                 const saleDoc = await saleRepository.findOne({
-                    where: {
-                        id: saleId,
-                        userId,
-                    },
+                    where: isCustomer
+                        ? { id: saleId, customerId: userId }
+                        : { id: saleId, userId },
                 });
 
                 if (!saleDoc) {

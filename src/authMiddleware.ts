@@ -5,6 +5,7 @@ export interface AuthPayload {
   id: string;
   userId: string;
   email?: string;
+  role?: string;
 }
 
 export function authMiddleware(req: Request, _res: Response, next: NextFunction) {
@@ -19,7 +20,7 @@ export function authMiddleware(req: Request, _res: Response, next: NextFunction)
     if (!token) return next();
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || "") as AuthPayload;
-    (req as any).user = { id: decoded?.id, email: decoded?.email } as AuthPayload;
+    (req as any).user = { id: decoded?.id, email: decoded?.email, role: decoded?.role } as AuthPayload;
     return next();
   } catch {
     return next();

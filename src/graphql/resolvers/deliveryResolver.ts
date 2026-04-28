@@ -1,10 +1,22 @@
+import { In } from "typeorm";
 import { AppDataSource } from "../../config/db.js";
 import { Deliveries } from "../models/delivery.entity.js";
+import { Sale } from "../models/sale.entity.js";
 import { requireAuth } from "../../requireAuth.js";
 
 const deliveryRepository = AppDataSource.getRepository(Deliveries);
+const saleRepository = AppDataSource.getRepository(Sale);
 
 export const deliveryResolver = {
+  // Map GraphQL enum keys (uppercase) <-> DB string values (lowercase).
+  // Without this, GraphQL can't serialize a DB row whose status is e.g.
+  // "packing" into the DeliveryStatus enum, and clients can't send PACKING.
+  DeliveryStatus: {
+    PACKING: 'packing',
+    SHIPPING: 'shipping',
+    SHIPPED: 'shipped',
+    DELIVERED: 'delivered',
+  },
   Query: {
     getDelivery: async (_: any, args: { id: string }, context: any): Promise<any> => {
       try {
@@ -40,19 +52,72 @@ export const deliveryResolver = {
       }
     },
 
-    getDeliveries: async (_: any, __: any, context: any): Promise<any> => {
+    getDeliveries: async (
+      _: any,
+      args: { saleStatus?: string; deliveryStatus?: string },
+      context: any
+    ): Promise<any> => {
       try {
-        requireAuth(context);
+        const authUser = requireAuth(context);
 
-        const deliveries = await deliveryRepository.find({
-          relations: ['sale']
+        // ── Self-heal step ─────────────────────────────────────────
+        // Some sales may not have a Deliveries row yet (older orders,
+        // or orders placed without picking a courier). Make sure every
+        // sale of this owner that should have a delivery actually does.
+        const ownerSaleWhere: any = { userId: authUser.id };
+        if (args.saleStatus) ownerSaleWhere.status = args.saleStatus;
+
+        const ownerSales = await saleRepository.find({
+          where: ownerSaleWhere,
+          select: { id: true } as any,
+        });
+        const saleIds = ownerSales.map(s => s.id);
+
+        if (saleIds.length > 0) {
+          const existing = await deliveryRepository.find({
+            where: { saleId: In(saleIds) },
+            select: { saleId: true } as any,
+          });
+          const haveDelivery = new Set(existing.map(d => d.saleId));
+          const missing = saleIds.filter(id => !haveDelivery.has(id));
+          if (missing.length > 0) {
+            const placeholders = missing.map(saleId =>
+              deliveryRepository.create({
+                saleId,
+                deliveryService: 'Not specified',
+                status: 'packing',
+              })
+            );
+            await deliveryRepository.save(placeholders);
+          }
+        }
+
+        // ── Actual fetch ───────────────────────────────────────────
+        const where: any = { sale: { userId: authUser.id } };
+        if (args.saleStatus) where.sale.status = args.saleStatus;
+        if (args.deliveryStatus) where.status = args.deliveryStatus;
+
+        const [deliveries, total] = await deliveryRepository.findAndCount({
+          where,
+          relations: [
+            'sale',
+            'sale.customer',
+            'sale.customerAddress',
+            'sale.saleDetails',
+            'sale.saleDetails.product',
+            'sale.saleDetails.product.unit',
+            'sale.saleDetails.unit',
+            'sale.payments',
+          ],
+          order: { sale: { saleDate: 'DESC' } } as any,
         });
 
         return {
           status: true,
           message: "Deliveries retrieved successfully",
           tap: "FETCHED",
-          deliveries: deliveries,
+          total,
+          deliveries,
         };
       } catch (error: any) {
         console.error("Get deliveries error:", error);
@@ -70,11 +135,12 @@ export const deliveryResolver = {
       try {
         requireAuth(context);
 
-        const { saleId, deliveryService, trackingNumber, status = 'packing' } = args.input;
+        const { saleId, deliveryService, branch, trackingNumber, status = 'packing' } = args.input;
 
         const newDelivery = deliveryRepository.create({
           saleId,
           deliveryService,
+          branch,
           trackingNumber,
           status,
         });
@@ -114,6 +180,15 @@ export const deliveryResolver = {
         }
 
         Object.assign(delivery, data);
+        // Auto-stamp shippedAt when the delivery transitions to a shipped state.
+        const shippedStates = ['shipping', 'shipped', 'delivered'];
+        if (
+          data.status &&
+          shippedStates.includes(String(data.status).toLowerCase()) &&
+          !delivery.shippedAt
+        ) {
+          delivery.shippedAt = new Date();
+        }
         const updatedDelivery = await deliveryRepository.save(delivery);
 
         return {
