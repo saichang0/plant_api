@@ -5,11 +5,13 @@ import { Products } from "../models/product.entity.js";
 import { Wishlists } from "../models/wishList.entity.js";
 import { uploadToCloudinary } from "@/utils/uploadImage.js";
 import { ProductViews } from "../models/productView.entity.js";
+import { StockMovements } from "../models/stockMovement.entity.js";
 import { Like, In } from 'typeorm';
 
 const productRepository = AppDataSource.getRepository(Products);
 const wishlistRepository = AppDataSource.getRepository(Wishlists);
 const productViewRepository = AppDataSource.getRepository(ProductViews);
+const stockMovementRepository = AppDataSource.getRepository(StockMovements);
 
 export const productResolver = {
     Query: {
@@ -335,6 +337,7 @@ export const productResolver = {
                     ...input,
                     imageUrl: imageUrls[0] || input.imageUrl || null,
                     isActive: true,
+                    isPopular: input.isSpecialOffer === true ? false : true,
                     createdBy: authUserId.id,
                 });
 
@@ -406,10 +409,32 @@ export const productResolver = {
                     }
                 }
 
+                const stockBefore = existingProduct.stockQuantity;
+
                 // Update product with new data
                 await productRepository.update({ id: productId }, { ...input });
 
                 const updatedProduct = await productRepository.findOne({ where: { id: productId } });
+
+                // Audit: if the manual edit changed the stock count, log it.
+                if (updatedProduct && updatedProduct.stockQuantity !== stockBefore) {
+                    try {
+                        const movement = stockMovementRepository.create({
+                            productId: updatedProduct.id,
+                            userId: authUser.id,
+                            change: updatedProduct.stockQuantity - stockBefore,
+                            quantityBefore: stockBefore,
+                            quantityAfter: updatedProduct.stockQuantity,
+                            reason: 'manual_edit',
+                            referenceId: updatedProduct.id,
+                            referenceType: 'product',
+                            note: `Manual edit via updateProduct`,
+                        });
+                        await stockMovementRepository.save(movement);
+                    } catch (e) {
+                        console.error('stock movement log (manual_edit) failed:', e);
+                    }
+                }
 
                 return {
                     status: true,

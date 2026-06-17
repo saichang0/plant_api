@@ -61,7 +61,6 @@ export const productTypeDefs = gql`
         ageMonths: Int
         unitId: ID
         weightPerUnit: Float
-
         stockQuantity: Int
         stockWeight: Float
         costPrice: Float

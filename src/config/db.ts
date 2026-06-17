@@ -6,6 +6,8 @@ import { Wishlists } from '@/graphql/models/wishList.entity.js';
 import { Users } from '@/graphql/models/user.entity.js';
 import { ProductReviews } from '@/graphql/models/productReview.entity.js';
 import { ProductViews } from '@/graphql/models/productView.entity.js';
+import { BankAccounts } from '@/graphql/models/bankAccount.entity.js';
+import { StockMovements } from '@/graphql/models/stockMovement.entity.js';
 import { Categories } from '@/graphql/models/category.entity.js';
 import { Customers } from '@/graphql/models/customer.entity.js';
 import { Deliveries } from '@/graphql/models/delivery.entity.js';
@@ -33,6 +35,8 @@ export const AppDataSource = new DataSource({
     Wishlists,
     ProductReviews,
     ProductViews,
+    BankAccounts,
+    StockMovements,
     Categories,
     Customers,
     Deliveries,

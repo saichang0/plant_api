@@ -28,7 +28,7 @@ export const reportResolver = {
         // Fetch all sales in range (scoped to owner)
         const sales = await saleRepository.find({
           where: { saleDate: Between(start, end), userId: authUser.id },
-          relations: ['saleDetails', 'saleDetails.product', 'saleDetails.product.category', 'saleDetails.product.unit', 'saleDetails.unit', 'user', 'payments'],
+          relations: ['saleDetails', 'saleDetails.product', 'saleDetails.product.category', 'saleDetails.product.unit', 'saleDetails.unit', 'user', 'customer', 'payments'],
         });
 
         // ═══════════════════════════════════════════════
@@ -201,7 +201,11 @@ export const reportResolver = {
           .map(sale => ({
             saleId: sale.id,
             saleDate: sale.saleDate?.toISOString ? sale.saleDate.toISOString() : String(sale.saleDate),
-            customerName: sale.customerName || null,
+            customerName:
+              sale.customerName ||
+              (sale.customer
+                ? `${sale.customer.firstName} ${sale.customer.lastName ?? ""}`.trim()
+                : null),
             staffName: sale.user ? `${sale.user.firstName} ${sale.user.lastName}` : null,
             items: (sale.saleDetails || []).map(d => ({
               productName: d.product?.name || "-",

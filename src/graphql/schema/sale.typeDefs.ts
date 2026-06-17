@@ -1,19 +1,28 @@
 import { gql } from 'graphql-tag';
 
 export const saleTypeDefs = gql`
+  enum SaleSource {
+    PLENT_WEB
+    PLENT_APP
+  }
+
   type Sale {
     id: ID!
+    code: String
     customerId: ID
     userId: ID!
     saleDate: String!
     totalAmount: Float!
+    totalPlant: Int
     taxAmount: Float
     discountAmount: Float
     status: String!
+    source: SaleSource
     customerName: String
     note: String
     customerAddressId: ID
     customerAddress: CustomerAddress
+    confirmedAt: String
     updatedAt: String
     customer: Customer
     user: User
@@ -60,6 +69,9 @@ export const saleTypeDefs = gql`
     taxAmount: Float
     discountAmount: Float
     status: String
+    # PLENT_APP for mobile customer, PLENT_WEB for POS/web shop dashboard.
+    # Defaults to PLENT_WEB on createFullSale; placeOrder always uses PLENT_APP.
+    source: SaleSource
     items: [SaleItemInput!]!
     payments: [PaymentInput!]
   }

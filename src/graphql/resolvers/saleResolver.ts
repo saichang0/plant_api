@@ -1,13 +1,26 @@
 import { In, Not, IsNull } from "typeorm";
 import { AppDataSource } from "../../config/db.js";
-import { Sale } from "../models/sale.entity.js";
+import { Sale, SaleSource } from "../models/sale.entity.js";
 import { SaleDetails } from "../models/saleDetail.entity.js";
 import { Products } from "../models/product.entity.js";
 import { Payments } from "../models/payment.entity.js";
 import { Deliveries } from "../models/delivery.entity.js";
+import { StockMovements } from "../models/stockMovement.entity.js";
 import { requireAuth, requireCustomer } from "../../requireAuth.js";
 
 const saleRepository = AppDataSource.getRepository(Sale);
+
+/// Generates a unique short order code like "pl-1234". Retries on collision.
+async function generateSaleCode(): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const n = Math.floor(1000 + Math.random() * 9000); // 1000..9999
+    const code = `pl-${n}`;
+    const existing = await saleRepository.findOne({ where: { code } });
+    if (!existing) return code;
+  }
+  // Final fallback: longer suffix to avoid running forever in unlikely contention.
+  return `pl-${Date.now().toString().slice(-6)}`;
+}
 
 export const saleResolver = {
   Query: {
@@ -191,7 +204,10 @@ export const saleResolver = {
       try {
         requireAuth(context);
 
-        const { customerId, userId, customerName, note, taxAmount = 0, discountAmount = 0, status = 'paid', items, payments: paymentInputs } = args.input;
+        const { customerId, userId, customerName, note, taxAmount = 0, discountAmount = 0, status = 'paid', source, items, payments: paymentInputs } = args.input;
+        // Normalise channel: explicit input wins, otherwise default to web/POS.
+        const saleSource: SaleSource = source === 'PLENT_APP' ? SaleSource.PLENT_APP : SaleSource.PLENT_WEB;
+        const saleCode = await generateSaleCode();
 
         if (!items || items.length === 0) {
           return { status: false, message: "Sale must have at least one item", tap: "INVALID_INPUT" };
@@ -199,20 +215,25 @@ export const saleResolver = {
 
         // Calculate total from items
         let subTotal = 0;
+        let totalPlant = 0;
         for (const item of items) {
           subTotal += Number(item.totalPrice);
+          totalPlant += Number(item.quantity) || 0;
         }
 
         const totalAmount = subTotal + Number(taxAmount) - Number(discountAmount);
 
         // Create the sale
         const sale = queryRunner.manager.create(Sale, {
+          code: saleCode,
           customerId: customerId || undefined,
           userId,
           totalAmount,
+          totalPlant,
           taxAmount: Number(taxAmount),
           discountAmount: Number(discountAmount),
           status,
+          source: saleSource,
           customerName: customerName || undefined,
           note: note || undefined,
         });
@@ -240,6 +261,7 @@ export const saleResolver = {
             const weightGrams = Number(item.weightGrams) || 0;
             const qty = Math.ceil(Number(item.quantity));
             const weightPerUnit = Number(product.weightPerUnit) || 0;
+            const stockBefore = product.stockQuantity;
 
             // Check if this is the product's own unit (full bag)
             const unitName = (item.unit || '').toLowerCase();
@@ -262,6 +284,22 @@ export const saleResolver = {
               product.stockQuantity = product.stockQuantity - qty;
             }
             await queryRunner.manager.save(product);
+
+            // Audit: log the stock change.
+            if (product.stockQuantity !== stockBefore) {
+              const movement = queryRunner.manager.create(StockMovements, {
+                productId: product.id,
+                userId,
+                change: product.stockQuantity - stockBefore,
+                quantityBefore: stockBefore,
+                quantityAfter: product.stockQuantity,
+                reason: 'sale',
+                referenceId: savedSale.id,
+                referenceType: 'sale',
+                note: `createFullSale (${savedSale.code ?? savedSale.id})`,
+              });
+              await queryRunner.manager.save(movement);
+            }
           }
         }
 
@@ -324,7 +362,19 @@ export const saleResolver = {
           return { status: false, message: "Sale not found", tap: "NOT_FOUND" };
         }
 
+        const previousStatus = sale.status;
         Object.assign(sale, data);
+
+        // Stamp confirmedAt the first time the order transitions to "confirmed".
+        if (
+          data.status &&
+          data.status.toLowerCase() === 'confirmed' &&
+          previousStatus.toLowerCase() !== 'confirmed' &&
+          !sale.confirmedAt
+        ) {
+          sale.confirmedAt = new Date();
+        }
+
         const updatedSale = await saleRepository.save(sale);
 
         return {
@@ -412,14 +462,22 @@ export const saleResolver = {
 
         // Calculate total
         let subTotal = 0;
-        for (const item of items) subTotal += Number(item.totalPrice);
+        let totalPlant = 0;
+        for (const item of items) {
+          subTotal += Number(item.totalPrice);
+          totalPlant += Number(item.quantity) || 0;
+        }
 
-        // Create the sale
+        // Create the sale (always tagged as coming from the mobile app)
+        const saleCode = await generateSaleCode();
         const sale = queryRunner.manager.create(Sale, {
+          code: saleCode,
           customerId: authCustomer.id,
           userId: shopOwnerId,
           totalAmount: subTotal,
+          totalPlant,
           status: 'pending',
+          source: SaleSource.PLENT_APP,
           customerAddressId: customerAddressId || undefined,
           note: note || undefined,
         });
@@ -449,6 +507,7 @@ export const saleResolver = {
             const unitName = (item.unit || '').toLowerCase();
             const isFullUnit = product.unitId && item.unitId && product.unitId === item.unitId
               && unitName !== 'kg' && unitName !== 'gram' && unitName !== 'ເຄິ່ງຖົງ';
+            const stockBefore = product.stockQuantity;
 
             if (isFullUnit && weightPerUnit > 0) {
               product.stockQuantity = product.stockQuantity - qty;
@@ -462,6 +521,22 @@ export const saleResolver = {
               product.stockQuantity = product.stockQuantity - qty;
             }
             await queryRunner.manager.save(product);
+
+            // Audit: log the stock change.
+            if (product.stockQuantity !== stockBefore) {
+              const movement = queryRunner.manager.create(StockMovements, {
+                productId: product.id,
+                userId: shopOwnerId,
+                change: product.stockQuantity - stockBefore,
+                quantityBefore: stockBefore,
+                quantityAfter: product.stockQuantity,
+                reason: 'sale',
+                referenceId: savedSale.id,
+                referenceType: 'sale',
+                note: `placeOrder (${savedSale.code ?? savedSale.id})`,
+              });
+              await queryRunner.manager.save(movement);
+            }
           }
         }
 

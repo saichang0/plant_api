@@ -2,8 +2,6 @@ import { Entity, PrimaryGeneratedColumn, CreateDateColumn, Column, ManyToOne, Jo
 import { Products } from "./product.entity.js";
 import { Customers } from "./customer.entity.js";
 
-/// A single "view" event on a product. Created whenever a customer opens
-/// the product detail screen or adds the product to their wishlist.
 @Entity('product_views')
 export class ProductViews {
   @PrimaryGeneratedColumn("uuid")

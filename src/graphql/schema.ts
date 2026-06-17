@@ -38,6 +38,10 @@ import { reportTypeDefs } from './schema/report.typeDefs.js';
 import { reportResolver } from './resolvers/reportResolver.js';
 import { customerAddressTypeDefs } from './schema/customerAddress.typeDefs.js';
 import { customerAddressResolver } from './resolvers/customerAddressResolver.js';
+import { bankAccountTypeDefs } from './schema/bankAccount.typeDefs.js';
+import { bankAccountResolver } from './resolvers/bankAccountResolver.js';
+import { historyTypeDefs } from './schema/history.typeDefs.js';
+import { historyResolver } from './resolvers/historyResolver.js';
 const typeDefs = mergeTypeDefs([
   CustomerTypeDefs,
   productTypeDefs,
@@ -58,6 +62,8 @@ const typeDefs = mergeTypeDefs([
   unitTypeDefs,
   reportTypeDefs,
   customerAddressTypeDefs,
+  bankAccountTypeDefs,
+  historyTypeDefs,
 ]);
 
 const resolvers = mergeResolvers([
@@ -80,6 +86,8 @@ const resolvers = mergeResolvers([
   unitResolver,
   reportResolver,
   customerAddressResolver,
+  bankAccountResolver,
+  historyResolver,
 ]);
 
 export const schema = makeExecutableSchema({

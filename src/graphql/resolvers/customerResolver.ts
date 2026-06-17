@@ -113,6 +113,7 @@ export const customerResolver = {
     },
 
     loginCustomer: async (_: any, args: { data: { identifier: string, password: string } }): Promise<AuthResponse> => {
+      console.log('Login attempt with data:', args.data);
       try {
         const { identifier, password } = args.data;
 

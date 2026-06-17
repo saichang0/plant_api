@@ -3,6 +3,7 @@ import { StockReceptions } from "../models/stockReception.entity.js";
 import { StockReceptionDetails } from "../models/stockReceptionDetail.entity.js";
 import { PurchaseOrders } from "../models/purchaseOrder.entity.js";
 import { Products } from "../models/product.entity.js";
+import { StockMovements } from "../models/stockMovement.entity.js";
 import { requireAuth } from "@/requireAuth.js";
 
 const stockReceptionRepository = AppDataSource.getRepository(StockReceptions);
@@ -112,6 +113,7 @@ export const stockReceptionResolver = {
               if (product) {
                 const qty = Math.ceil(Number(item.quantityReceived));
                 const weightPerUnit = Number(product.weightPerUnit) || 0;
+                const stockBefore = product.stockQuantity;
 
                 product.stockQuantity = product.stockQuantity + qty;
                 if (weightPerUnit > 0) {
@@ -122,6 +124,22 @@ export const stockReceptionResolver = {
                   product.costPrice = Number(item.actualCostPrice);
                 }
                 await manager.save(Products, product);
+
+                // Audit: log the stock increase.
+                if (product.stockQuantity !== stockBefore) {
+                  const movement = manager.create(StockMovements, {
+                    productId: product.id,
+                    userId: authUser.id,
+                    change: product.stockQuantity - stockBefore,
+                    quantityBefore: stockBefore,
+                    quantityAfter: product.stockQuantity,
+                    reason: 'reception',
+                    referenceId: savedReception.id,
+                    referenceType: 'stock_reception',
+                    note: `Stock reception (${savedReception.id})`,
+                  });
+                  await manager.save(movement);
+                }
               }
             }
           }
