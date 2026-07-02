@@ -1,0 +1,299 @@
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+<meta charset='utf-8'>
+<title>Database Schema</title>
+<style>
+body { font-family: 'Calibri', sans-serif; font-size: 11pt; }
+h1 { font-size: 20pt; margin-top: 18pt; }
+h2 { font-size: 14pt; margin-top: 14pt; margin-bottom: 4pt; }
+table { border-collapse: collapse; width: 100%; margin-bottom: 14pt; }
+th, td { border: 1px solid #000; padding: 5px 8px; vertical-align: top; font-size: 10pt; }
+th { background: #d9d9d9; text-align: left; }
+.tbl-title { font-weight: bold; margin-top: 14pt; }
+</style>
+</head>
+<body>
+
+<h1>Database Schema (Backend Models)</h1>
+<p>Generated from TypeORM entities in <i>src/graphql/models/</i>.</p>
+
+<div class='tbl-title'>ຕາຕະລາງ users</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key (auto)</td></tr>
+<tr><td>firstName</td><td>VARCHAR</td><td>50</td><td></td><td></td><td>User first name</td></tr>
+<tr><td>lastName</td><td>VARCHAR</td><td>50</td><td></td><td></td><td>User last name</td></tr>
+<tr><td>password</td><td>VARCHAR</td><td>255</td><td></td><td></td><td>Hashed password</td></tr>
+<tr><td>phoneNumber</td><td>VARCHAR</td><td>20</td><td>UNIQUE</td><td></td><td>Login phone (unique)</td></tr>
+<tr><td>email</td><td>VARCHAR</td><td>100</td><td>UNIQUE</td><td></td><td>Email (optional, unique)</td></tr>
+<tr><td>profileImageUrl</td><td>TEXT</td><td>-</td><td></td><td></td><td>Profile picture URL</td></tr>
+<tr><td>shopName</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Shop name (for shop owners)</td></tr>
+<tr><td>bankAccountImageUrl</td><td>TEXT</td><td>-</td><td></td><td></td><td>Bank account / QR image</td></tr>
+<tr><td>role</td><td>VARCHAR</td><td>20</td><td></td><td></td><td>admin / manager / staff (default: staff)</td></tr>
+<tr><td>status</td><td>ENUM</td><td>-</td><td></td><td></td><td>ACTIVE / INACTIVE</td></tr>
+<tr><td>otp</td><td>VARCHAR</td><td>6</td><td></td><td></td><td>OTP code for verification</td></tr>
+<tr><td>otpExpiry</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>OTP expiry time</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Record created time</td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Record last updated</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ customers</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>firstName</td><td>VARCHAR</td><td>50</td><td></td><td></td><td>Customer first name</td></tr>
+<tr><td>lastName</td><td>VARCHAR</td><td>50</td><td></td><td></td><td>Customer last name</td></tr>
+<tr><td>profileImageUrl</td><td>TEXT</td><td>-</td><td></td><td></td><td>Profile picture URL</td></tr>
+<tr><td>phoneNumber</td><td>VARCHAR</td><td>20</td><td>UNIQUE</td><td></td><td>Login phone (unique)</td></tr>
+<tr><td>email</td><td>VARCHAR</td><td>100</td><td>UNIQUE</td><td></td><td>Email (unique)</td></tr>
+<tr><td>address</td><td>TEXT</td><td>-</td><td></td><td></td><td>Customer address (optional)</td></tr>
+<tr><td>password</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Hashed password</td></tr>
+<tr><td>otp</td><td>VARCHAR</td><td>6</td><td></td><td></td><td>OTP code</td></tr>
+<tr><td>otpExpiry</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>OTP expiry time</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Created time</td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Updated time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ customer_addresses</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>customerId</td><td>UUID</td><td>-</td><td>FK</td><td>customers.id</td><td>Owning customer</td></tr>
+<tr><td>province</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Province</td></tr>
+<tr><td>district</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>District</td></tr>
+<tr><td>village</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Village</td></tr>
+<tr><td>country</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Country (default: Laos)</td></tr>
+<tr><td>isDefault</td><td>BOOLEAN</td><td>-</td><td></td><td></td><td>Default shipping address flag</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Created time</td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Updated time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ bank_accounts</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>userId</td><td>UUID</td><td>-</td><td>FK</td><td>users.id</td><td>Owning user (shop)</td></tr>
+<tr><td>bankName</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Bank name</td></tr>
+<tr><td>qrImageUrl</td><td>TEXT</td><td>-</td><td></td><td></td><td>QR code image URL</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Created time</td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Updated time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ categories</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>name</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Category name</td></tr>
+<tr><td>createdBy</td><td>UUID</td><td>-</td><td>FK</td><td>users.id</td><td>Creator user</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Created time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ units</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>name</td><td>VARCHAR</td><td>50</td><td>UNIQUE(name,createdBy)</td><td></td><td>Unit name (e.g. bag, kg)</td></tr>
+<tr><td>weightInGrams</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Conversion to grams</td></tr>
+<tr><td>isActive</td><td>BOOLEAN</td><td>-</td><td></td><td></td><td>Active flag</td></tr>
+<tr><td>createdBy</td><td>UUID</td><td>-</td><td>FK</td><td>users.id</td><td>Creator user</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Created time</td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Updated time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ products</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>categoryId</td><td>UUID</td><td>-</td><td>FK</td><td>categories.id</td><td>Product category</td></tr>
+<tr><td>name</td><td>VARCHAR</td><td>255</td><td></td><td></td><td>Product name</td></tr>
+<tr><td>imageUrl</td><td>TEXT</td><td>-</td><td></td><td></td><td>Product image URL</td></tr>
+<tr><td>description</td><td>TEXT</td><td>-</td><td></td><td></td><td>Description</td></tr>
+<tr><td>size</td><td>VARCHAR</td><td>50</td><td></td><td></td><td>Size label</td></tr>
+<tr><td>ageMonths</td><td>INT</td><td>-</td><td></td><td></td><td>Plant age in months</td></tr>
+<tr><td>unitId</td><td>UUID</td><td>-</td><td>FK</td><td>units.id</td><td>Primary selling unit</td></tr>
+<tr><td>weightPerUnit</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Grams per unit (e.g. 50000g/bag)</td></tr>
+<tr><td>stockQuantity</td><td>INT</td><td>-</td><td></td><td></td><td>Stock in piece/bag count</td></tr>
+<tr><td>stockWeight</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Stock in grams (weight-based)</td></tr>
+<tr><td>costPrice</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Cost price</td></tr>
+<tr><td>salePrice</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Selling price</td></tr>
+<tr><td>pricePerHalfBag</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Optional half-bag price</td></tr>
+<tr><td>pricePer12Kg</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Optional 12kg bundle price</td></tr>
+<tr><td>pricePerKg</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Optional price per kg</td></tr>
+<tr><td>isPopular</td><td>BOOLEAN</td><td>-</td><td></td><td></td><td>Featured / popular flag</td></tr>
+<tr><td>isSpecialOffer</td><td>BOOLEAN</td><td>-</td><td></td><td></td><td>Special offer flag</td></tr>
+<tr><td>discount</td><td>DECIMAL</td><td>5,2</td><td></td><td></td><td>Discount percentage</td></tr>
+<tr><td>isActive</td><td>BOOLEAN</td><td>-</td><td></td><td></td><td>Active flag</td></tr>
+<tr><td>viewsCount</td><td>INT</td><td>-</td><td></td><td></td><td>Product detail view count</td></tr>
+<tr><td>createdBy</td><td>UUID</td><td>-</td><td>FK</td><td>users.id</td><td>Owner user (shop)</td></tr>
+<tr><td>deletedBy</td><td>UUID</td><td>-</td><td></td><td></td><td>User who soft-deleted</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Created time</td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Updated time</td></tr>
+<tr><td>deletedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Soft-delete time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ suppliers</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>name</td><td>VARCHAR</td><td>255</td><td></td><td></td><td>Supplier name</td></tr>
+<tr><td>phoneNumber</td><td>VARCHAR</td><td>20</td><td></td><td></td><td>Phone number</td></tr>
+<tr><td>email</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Email address</td></tr>
+<tr><td>address</td><td>TEXT</td><td>-</td><td></td><td></td><td>Address</td></tr>
+<tr><td>createdBy</td><td>UUID</td><td>-</td><td>FK</td><td>users.id</td><td>Creator user</td></tr>
+<tr><td>deletedBy</td><td>UUID</td><td>-</td><td></td><td></td><td>User who soft-deleted</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Created time</td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Updated time</td></tr>
+<tr><td>deletedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Soft-delete time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ purchase_orders</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>supplierId</td><td>UUID</td><td>-</td><td>FK</td><td>suppliers.id</td><td>Supplier of the order</td></tr>
+<tr><td>userId</td><td>UUID</td><td>-</td><td>FK</td><td>users.id</td><td>User who created the order</td></tr>
+<tr><td>orderDate</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Order date</td></tr>
+<tr><td>totalPrice</td><td>DECIMAL</td><td>10,2</td><td></td><td></td><td>Total order price</td></tr>
+<tr><td>status</td><td>VARCHAR</td><td>-</td><td></td><td></td><td>pending / received / cancelled</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ purchaseOrderDetails</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>orderId</td><td>UUID</td><td>-</td><td>FK</td><td>purchase_orders.id</td><td>Parent purchase order</td></tr>
+<tr><td>productId</td><td>UUID</td><td>-</td><td>FK</td><td>products.id</td><td>Product ordered</td></tr>
+<tr><td>quantity</td><td>INT</td><td>-</td><td></td><td></td><td>Quantity ordered</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ stock_receptions</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>purchaseOrderId</td><td>UUID</td><td>-</td><td>FK</td><td>purchase_orders.id</td><td>Source purchase order (optional)</td></tr>
+<tr><td>userId</td><td>UUID</td><td>-</td><td>FK</td><td>users.id</td><td>User who received stock</td></tr>
+<tr><td>receptionDate</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Stock reception date</td></tr>
+<tr><td>totalActualPrice</td><td>DECIMAL</td><td>10,2</td><td></td><td></td><td>Total received cost</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ stock_reception_details</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>receptionId</td><td>UUID</td><td>-</td><td>FK</td><td>stock_receptions.id</td><td>Parent reception</td></tr>
+<tr><td>productId</td><td>UUID</td><td>-</td><td>FK</td><td>products.id</td><td>Product received</td></tr>
+<tr><td>quantityReceived</td><td>INT</td><td>-</td><td></td><td></td><td>Quantity received</td></tr>
+<tr><td>actualCostPrice</td><td>DECIMAL</td><td>10,2</td><td></td><td></td><td>Actual cost price</td></tr>
+<tr><td>status</td><td>VARCHAR</td><td>-</td><td></td><td></td><td>Reception status</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ stock_movements</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>productId</td><td>UUID</td><td>-</td><td>FK</td><td>products.id</td><td>Affected product</td></tr>
+<tr><td>userId</td><td>UUID</td><td>-</td><td>FK</td><td>users.id</td><td>Shop owner whose stock changed</td></tr>
+<tr><td>change</td><td>INT</td><td>-</td><td></td><td></td><td>Signed delta (-/+ stock change)</td></tr>
+<tr><td>quantityBefore</td><td>INT</td><td>-</td><td></td><td></td><td>Quantity before change</td></tr>
+<tr><td>quantityAfter</td><td>INT</td><td>-</td><td></td><td></td><td>Quantity after change</td></tr>
+<tr><td>reason</td><td>VARCHAR</td><td>32</td><td></td><td></td><td>sale / reception / manual_edit</td></tr>
+<tr><td>referenceId</td><td>UUID</td><td>-</td><td></td><td></td><td>Source record id (sale/reception)</td></tr>
+<tr><td>referenceType</td><td>VARCHAR</td><td>32</td><td></td><td></td><td>Source record type</td></tr>
+<tr><td>note</td><td>TEXT</td><td>-</td><td></td><td></td><td>Optional note</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Created time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ sales</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>code</td><td>VARCHAR</td><td>32</td><td>UNIQUE</td><td></td><td>Human-readable code (e.g. pl-1234)</td></tr>
+<tr><td>customerId</td><td>UUID</td><td>-</td><td>FK</td><td>customers.id</td><td>Customer (null for walk-in)</td></tr>
+<tr><td>userId</td><td>UUID</td><td>-</td><td>FK</td><td>users.id</td><td>Shop owner / cashier</td></tr>
+<tr><td>saleDate</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Sale date</td></tr>
+<tr><td>totalAmount</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Total money amount</td></tr>
+<tr><td>totalPlant</td><td>INT</td><td>-</td><td></td><td></td><td>Total plant count of order</td></tr>
+<tr><td>taxAmount</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Tax</td></tr>
+<tr><td>discountAmount</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Discount</td></tr>
+<tr><td>status</td><td>VARCHAR</td><td>-</td><td></td><td></td><td>pending / paid / completed / cancelled / draft</td></tr>
+<tr><td>source</td><td>ENUM</td><td>-</td><td></td><td></td><td>PLENT_WEB / PLENT_APP</td></tr>
+<tr><td>customerName</td><td>VARCHAR</td><td>255</td><td></td><td></td><td>Walk-in customer name</td></tr>
+<tr><td>note</td><td>TEXT</td><td>-</td><td></td><td></td><td>Optional note</td></tr>
+<tr><td>customerAddressId</td><td>UUID</td><td>-</td><td>FK</td><td>customer_addresses.id</td><td>Shipping address</td></tr>
+<tr><td>confirmedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Time customer confirmed receipt</td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Updated time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ saleDetails</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>saleId</td><td>UUID</td><td>-</td><td>FK</td><td>sales.id</td><td>Parent sale</td></tr>
+<tr><td>productId</td><td>UUID</td><td>-</td><td>FK</td><td>products.id</td><td>Product sold</td></tr>
+<tr><td>quantity</td><td>DECIMAL</td><td>10,2</td><td></td><td></td><td>Item count (bag/piece)</td></tr>
+<tr><td>unitId</td><td>UUID</td><td>-</td><td>FK</td><td>units.id</td><td>Unit of sale</td></tr>
+<tr><td>weightGrams</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Weight in grams (kg/gram sales)</td></tr>
+<tr><td>unitPrice</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Price per unit</td></tr>
+<tr><td>totalPrice</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Line total</td></tr>
+<tr><td>note</td><td>TEXT</td><td>-</td><td></td><td></td><td>Line note</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ payments</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>saleId</td><td>UUID</td><td>-</td><td>FK</td><td>sales.id</td><td>Sale being paid</td></tr>
+<tr><td>paymentMethod</td><td>VARCHAR</td><td>50</td><td></td><td></td><td>cash / transfer / etc.</td></tr>
+<tr><td>currency</td><td>VARCHAR</td><td>10</td><td></td><td></td><td>KIP / THB / USD</td></tr>
+<tr><td>amount</td><td>DECIMAL</td><td>12,2</td><td></td><td></td><td>Payment amount</td></tr>
+<tr><td>slipImageUrl</td><td>TEXT</td><td>-</td><td></td><td></td><td>Transfer slip image</td></tr>
+<tr><td>paidAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Paid time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ deliveries</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>saleId</td><td>UUID</td><td>-</td><td>FK</td><td>sales.id</td><td>Sale being delivered</td></tr>
+<tr><td>deliveryService</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Courier name</td></tr>
+<tr><td>branch</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Courier branch</td></tr>
+<tr><td>trackingNumber</td><td>VARCHAR</td><td>100</td><td></td><td></td><td>Tracking number</td></tr>
+<tr><td>status</td><td>VARCHAR</td><td>20</td><td></td><td></td><td>packing / shipping / shipped / delivered</td></tr>
+<tr><td>shippedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Time shipped</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ wishlists</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>customerId</td><td>UUID</td><td>-</td><td>FK</td><td>customers.id</td><td>Owning customer</td></tr>
+<tr><td>productId</td><td>UUID</td><td>-</td><td>FK</td><td>products.id</td><td>Wishlisted product</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Created time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ product_reviews</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>productId</td><td>UUID</td><td>-</td><td>FK</td><td>products.id</td><td>Reviewed product</td></tr>
+<tr><td>customerId</td><td>UUID</td><td>-</td><td>FK</td><td>customers.id</td><td>Review author</td></tr>
+<tr><td>saleId</td><td>UUID</td><td>-</td><td>FK</td><td>sales.id</td><td>Source sale</td></tr>
+<tr><td>rating</td><td>INT</td><td>-</td><td></td><td></td><td>1-5 stars</td></tr>
+<tr><td>comment</td><td>TEXT</td><td>-</td><td></td><td></td><td>Review text</td></tr>
+<tr><td>isVerifiedPurchase</td><td>BOOLEAN</td><td>-</td><td></td><td></td><td>Verified-purchase flag</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Created time</td></tr>
+<tr><td>updatedAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>Updated time</td></tr>
+</table>
+
+<div class='tbl-title'>ຕາຕະລາງ product_views</div>
+<table>
+<tr><th>Field Name</th><th>Data Type</th><th>Size</th><th>Key</th><th>Reference</th><th>Description</th></tr>
+<tr><td>id</td><td>UUID</td><td>-</td><td>PK</td><td></td><td>Primary key</td></tr>
+<tr><td>productId</td><td>UUID</td><td>-</td><td>FK</td><td>products.id</td><td>Viewed product</td></tr>
+<tr><td>customerId</td><td>UUID</td><td>-</td><td>FK</td><td>customers.id</td><td>Viewer customer</td></tr>
+<tr><td>source</td><td>VARCHAR</td><td>32</td><td></td><td></td><td>detail / wishlist</td></tr>
+<tr><td>createdAt</td><td>TIMESTAMP</td><td>-</td><td></td><td></td><td>View time</td></tr>
+</table>
+
+</body>
+</html>

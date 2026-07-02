@@ -128,6 +128,16 @@ export const wishlistResolver = {
                 });
 
                 if (existingWishlist) {
+                    // Capture the fields BEFORE removing. TypeORM's remove()
+                    // mutates the entity and clears its `id`, which would make
+                    // the non-nullable `iswhislist.id` field null and crash the
+                    // GraphQL response.
+                    const removed = {
+                        id: existingWishlist.id,
+                        customerId: existingWishlist.customerId,
+                        productId: existingWishlist.productId,
+                    };
+
                     await wishlistRepository.remove(existingWishlist);
 
                     return {
@@ -135,9 +145,9 @@ export const wishlistResolver = {
                         message: msg.WISHLIST_REMOVED,
                         tap: "WISHLIST_REMOVED",
                         data: {
-                            id: existingWishlist.id,
-                            customerId: existingWishlist.customerId,
-                            productId: existingWishlist.productId,
+                            id: removed.id,
+                            customerId: removed.customerId,
+                            productId: removed.productId,
                             isFavorite: false,
                         },
                     };
