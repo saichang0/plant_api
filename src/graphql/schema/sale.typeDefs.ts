@@ -134,7 +134,7 @@ export const saleTypeDefs = gql`
 
   type Query {
     getSale(id: ID!): SaleResponse
-    getSales(status: String, limit: Int, offset: Int): SalesResponse
+    getSales(status: String, source: SaleSource, limit: Int, offset: Int): SalesResponse
     # Customer-facing
     myOrders(status: String, limit: Int, offset: Int): SalesResponse
     myOrder(id: ID!): SaleResponse

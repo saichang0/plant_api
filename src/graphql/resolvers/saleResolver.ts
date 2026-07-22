@@ -58,16 +58,20 @@ export const saleResolver = {
       }
     },
 
-    getSales: async (_: any, args: { status?: string; limit?: number; offset?: number }, context: any): Promise<any> => {
+    getSales: async (_: any, args: { status?: string; source?: string; limit?: number; offset?: number }, context: any): Promise<any> => {
       try {
         const authUser = requireAuth(context);
 
-        // Only orders that came from the customer app (Flutter):
-        // those always have a customerId. POS walk-in sales don't.
         const where: any = {
           userId: authUser.id,
-          customerId: Not(IsNull()),
         };
+        if (args.source) {
+          where.source = args.source;
+        } else {
+          // No source specified: default to customer-app orders, which
+          // always have a customerId. POS walk-in sales don't.
+          where.customerId = Not(IsNull());
+        }
         if (args.status) {
           where.status = args.status;
         }
